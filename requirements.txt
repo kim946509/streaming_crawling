@@ -22,8 +22,10 @@ h11==0.16.0
 idna==3.10
 inflection==0.5.1
 kombu==5.5.3
+numpy==2.0.2
 outcome==1.3.0.post0
 packaging==25.0
+pandas==2.2.3
 prompt_toolkit==3.0.51
 PySocks==1.7.1
 python-crontab==3.2.0
