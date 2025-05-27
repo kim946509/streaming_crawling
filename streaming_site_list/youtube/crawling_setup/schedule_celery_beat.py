@@ -10,9 +10,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-def YouTubeSongViewCountCrawlingSchedule():
+def YouTubeSongCrawlingSchedule():
     """
-    유튜브 크롤링 스케줄을 생성하는 함수
+    유튜브 조회수 크롤링 스케줄을 생성하는 함수
     매일 한국 시간 오후 5시(17:00 KST)에 실행되도록 설정
     """
     try:
@@ -40,14 +40,19 @@ def YouTubeSongViewCountCrawlingSchedule():
             name='매일 오후 5시에 시작되는 크롤링',
             defaults={
                 'crontab': schedule,
-                'task': 'streaming_site_list.youtube.crawling_setup.tasks.SongViewCountTask',
+                'task': 'streaming_site_list.youtube.crawling_setup.tasks.YouTubeSongCrawlingTask',
+                'enabled': True,
             }
         )
 
         if task_created:
             logger.info("새로운 Periodic Task가 생성되었습니다.")
         else:
-            logger.info("기존 Periodic Task가 존재합니다.")
+            # 기존 태스크가 있다면 스케줄 업데이트
+            task.crontab = schedule
+            task.enabled = True
+            task.save()
+            logger.info(f"기존 Periodic Task가 업데이트되었습니다")
 
         return True
 
@@ -56,4 +61,4 @@ def YouTubeSongViewCountCrawlingSchedule():
         return False
 
 if __name__ == "__main__":
-    YouTubeSongViewCountCrawlingSchedule()
+    YouTubeSongCrawlingSchedule()
