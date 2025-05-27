@@ -44,6 +44,12 @@ INSTALLED_APPS = [
 
     # Framework
     'rest_framework', # DRF
+
+    # Celery Beat
+    'django_celery_beat',
+
+    # Swagger
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
