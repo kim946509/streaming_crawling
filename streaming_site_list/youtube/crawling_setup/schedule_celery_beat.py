@@ -36,8 +36,9 @@ def YouTubeSongCrawlingSchedule():
         else:
             logger.info("기존 Crontab 스케줄을 사용합니다. (KST 17:00 실행)")
 
+        task_name = 'youtube_daily_crawling_task'
         task, task_created = PeriodicTask.objects.get_or_create(
-            name='매일 오후 5시에 시작되는 크롤링',
+            name=task_name,
             defaults={
                 'crontab': schedule,
                 'task': 'streaming_site_list.youtube.crawling_setup.tasks.YouTubeSongCrawlingTask',
@@ -46,13 +47,13 @@ def YouTubeSongCrawlingSchedule():
         )
 
         if task_created:
-            logger.info("새로운 Periodic Task가 생성되었습니다.")
+            logger.info(f"새로운 Periodic Task가 생성되었습니다: {task_name}")
         else:
             # 기존 태스크가 있다면 스케줄 업데이트
             task.crontab = schedule
             task.enabled = True
             task.save()
-            logger.info(f"기존 Periodic Task가 업데이트되었습니다")
+            logger.info(f"기존 Periodic Task가 업데이트되었습니다: {task_name}")
 
         return True
 
