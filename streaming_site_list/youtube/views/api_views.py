@@ -6,7 +6,7 @@ from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongV
 
 # ---------- ⬇️ crawler 함수 호출 ----------
 from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler
-from streaming_site_list.youtube.crawling_setup.tasks import YouTubeSongCrawlingTask
+from streaming_site_list.youtube.celery_setup.tasks import YouTubeSongCrawlingTask
 
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
