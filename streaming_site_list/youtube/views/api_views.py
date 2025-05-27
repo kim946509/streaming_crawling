@@ -5,7 +5,7 @@ from streaming_site_list.youtube.models import YouTubeSongViewCount
 from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongViewCountSerializer
 
 # ---------- ⬇️ crawler 함수 호출 ----------
-from streaming_site_list.youtube.views.crawler import song_view_count
+from streaming_site_list.youtube.views.crawler import SongViewCountCrawl
 
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
@@ -42,7 +42,7 @@ class YouTubeSongViewCountAPIView(APIView):
         song_ids_str = ','.join(song_ids)
 
         # 크롤링 작업 큐에 추가
-        song_view_count.delay(song_ids_str)
+        SongViewCountCrawl.delay(song_ids_str)
 
     def get(self, request):
         queryset = YouTubeSongViewCount.objects.all().order_by('-extracted_date') # 크롤링 한 날짜의 최신순으로 정렬
