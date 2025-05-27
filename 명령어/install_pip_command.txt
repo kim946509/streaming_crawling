@@ -12,3 +12,9 @@ pip install django-celery-beat
 
 # redis 설치
 brew install redis
+
+# selenium 설치
+pip install selenium
+
+# beautifulSoup 설치
+pip install beautifulsoup4
