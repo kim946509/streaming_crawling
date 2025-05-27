@@ -40,8 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # 앱 추가
-    'streaming_site_list.youtube',
-    'streaming_site_list.youtube_music',
+    'streaming_site_list.youtube', # 유튜브에서 노래 조회수 크롤링
 
     # Framework
     'rest_framework', # DRF
