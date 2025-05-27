@@ -6,7 +6,7 @@ from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongV
 
 # ---------- ⬇️ crawler 함수 호출 ----------
 from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler
-from streaming_site_list.youtube.crawling_setup.tasks import YouTubeSingCrawlingTask
+from streaming_site_list.youtube.crawling_setup.tasks import YouTubeSongCrawlingTask
 
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
@@ -78,7 +78,7 @@ class YouTubeSongViewCountAPIView(APIView):
                 }, status=status.HTTP_200_OK)
             else:
                 # Celery task로 예약
-                task = YouTubeSingCrawlingTask.delay(song_ids)
+                task = YouTubeSongCrawlingTask.delay(song_ids)
                 return Response({
                     'message': '크롤링 작업이 성공적으로 예약되었습니다.',
                     'task_info': {
