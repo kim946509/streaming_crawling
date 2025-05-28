@@ -48,7 +48,7 @@ class YouTubeSongViewCountAPIView(APIView):
             required=['urls', 'company_name'],
             example={
                 'urls': ["https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s"],
-                'company_name': "고객사 명",
+                'company_name': "rhoonart",
                 'immediate': False
             }
         ),
