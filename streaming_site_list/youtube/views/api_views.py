@@ -16,7 +16,9 @@ from drf_yasg import openapi
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+import logging, time
 
+logger = logging.getLogger(__name__)
 
 # ---------- ⬇️ API 함수 정의 ----------
 class YouTubeSongViewCountAPIView(APIView):
@@ -25,7 +27,7 @@ class YouTubeSongViewCountAPIView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'song_ids': openapi.Schema(
+                'urls': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(type=openapi.TYPE_STRING),
                     description="크롤링할 유튜브 동영상 ID 목록"
@@ -36,9 +38,25 @@ class YouTubeSongViewCountAPIView(APIView):
                     default=False
                 )
             },
-            required=['song_ids'],
+            required=['urls'],
             example={
-                'song_ids': ['Sv2mIvMwrSY', 'dQw4w9WgXcQ'],
+                'urls': [
+                    "https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s", 
+                    "https://www.youtube.com/watch?v=T4gsXNcF4Z0", "https://www.youtube.com/watch?v=-VQx4dePV5I", 
+                    "https://www.youtube.com/watch?v=ecTQx5JNZBA", "https://www.youtube.com/watch?v=NiTwT05VgPA", 
+                    "https://www.youtube.com/watch?v=nZpOGr1C8es", "https://www.youtube.com/watch?v=M1MFK5rWUpU", 
+                    "https://www.youtube.com/watch?v=xpSJnLMCRxc", "https://www.youtube.com/watch?v=6hhhleiuaJA", 
+                    "https://www.youtube.com/watch?v=jKY7pm7xlLk", "https://www.youtube.com/watch?v=C36Y5fmPnrQ", 
+                    "https://www.youtube.com/watch?v=cpfFpC5xrrY", "https://www.youtube.com/watch?v=TlkHKmjha3U", 
+                    "https://www.youtube.com/watch?v=M1MFK5rWUpU", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
+                    "https://www.youtube.com/watch?v=z7WJw6SY0m0", "https://www.youtube.com/watch?v=ecTQx5JNZBA", 
+                    "https://www.youtube.com/watch?v=2r0Wh1uEiuE", "https://www.youtube.com/watch?v=R6VH1qB-Hlg", 
+                    "https://www.youtube.com/watch?v=HSUgcYisbmw", "https://www.youtube.com/watch?v=fi-QYKZP1d0", 
+                    "https://www.youtube.com/watch?v=uIcpEprBKUA", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
+                    "https://www.youtube.com/watch?v=r8clc_Vwahs", "https://www.youtube.com/watch?v=z7WJw6SY0m0", 
+                    "https://www.youtube.com/watch?v=jn__gJ-7-vE", "https://www.youtube.com/watch?v=61yiWvXwB74", 
+                    "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
+                    ],
                 'immediate': False
             }
         ),
@@ -59,31 +77,31 @@ class YouTubeSongViewCountAPIView(APIView):
         }
     )
     def post(self, request):
-        song_ids = request.data.get('song_ids', [])
+        urls = request.data.get('urls', [])
         immediate = request.data.get('immediate', False)
 
-        if not song_ids:
+        if not urls:
             return Response(
-                {'error': 'song_ids 필드가 필요합니다.'},
+                {'error': 'urls 필드가 필요합니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             if immediate:
                 # 즉시 실행
-                results = YouTubeSongCrawler(song_ids)
+                results = YouTubeSongCrawler(urls)
                 return Response({
                     'message': '크롤링이 즉시 실행되었습니다.',
                     'results': results
                 }, status=status.HTTP_200_OK)
             else:
                 # Celery task로 예약
-                task = YouTubeSongCrawlingTask.delay(song_ids)
+                task = YouTubeSongCrawlingTask.delay(urls)
                 return Response({
                     'message': '크롤링 작업이 성공적으로 예약되었습니다.',
                     'task_info': {
                         'task_id': task.id,
-                        'song_count': len(song_ids)
+                        'song_count': len(urls)
                     }
                 }, status=status.HTTP_202_ACCEPTED)
 
