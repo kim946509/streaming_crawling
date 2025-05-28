@@ -64,6 +64,13 @@ def save_each_to_csv(results):
     """
     filepaths = {}
     for song_id, data in results.items():
+        if data.get('view_count') is not None:
+            try:
+                data['view_count'] = int(data['view_count'])
+            except (ValueError, TypeError):
+                data['view_count'] = None
+                logger.error(f"❌ 조회수 변환 실패: {data['view_count']}")
+
         song_name = data.get('song_name', 'unknown')
         # 파일명에 사용할 수 없는 문자 제거 및 공백을 언더바로 변환
         song_name_clean = re.sub(r'[\\/:*?"<>|]', '', song_name)
@@ -141,6 +148,24 @@ def extract_song_id(youtube_url):
     return None
 
 
+def find_with_selectors(soup, selectors, get_text=True):
+    """
+    여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환
+    """
+    for selector in selectors:
+        if selector.get('type') == 'css':
+            el = soup.select_one(selector['value'])
+        elif selector.get('type') == 'tag_class':
+            el = soup.find(selector['tag'], class_=selector['class'])
+        elif selector.get('type') == 'tag_id':
+            el = soup.find(selector['tag'], id=selector['id'])
+        else:
+            continue
+        if el:
+            return el.text.strip() if get_text else el
+    return None
+
+
 # ---------- ⬇️ 크롤링 함수 ----------
 def YouTubeSongCrawler(urls):
     """
@@ -195,22 +220,33 @@ def YouTubeSongCrawler(urls):
                     html = driver.page_source
                     soup = BeautifulSoup(html, 'html.parser')
 
-                    # 동영상 제목 추출
-                    title_element = soup.find('h1', {'class': 'style-scope ytd-watch-metadata'})
-                    song_name = title_element.text.strip() if title_element else None
+                    # 동영상 제목 추출 (여러 selector 시도)
+                    title_selectors = [
+                        {'type': 'css', 'value': 'h1.title'},
+                        {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
+                        {'type': 'tag_class', 'tag': 'h1', 'class': 'style-scope ytd-watch-metadata'},
+                    ]
+                    song_name = find_with_selectors(soup, title_selectors)
 
-                    # 조회수 추출
-                    view_count_element = soup.find('span', class_='view-count')
-                    view_count_text = view_count_element.text.strip() if view_count_element else None
+                    # 조회수 추출 (여러 selector 시도)
+                    view_count_selectors = [
+                        {'type': 'css', 'value': 'span.view-count'},
+                        {'type': 'css', 'value': 'span.ytd-video-view-count-renderer'},
+                        {'type': 'tag_class', 'tag': 'span', 'class': 'view-count'},
+                    ]
+                    view_count_text = find_with_selectors(soup, view_count_selectors)
                     view_count = convert_view_count(view_count_text)
 
-                    # 업로드 날짜 추출
-                    info_text = soup.find('div', {'id': 'info-strings'})
+                    # 업로드 날짜 추출 (여러 selector 시도)
+                    upload_date_selectors = [
+                        {'type': 'css', 'value': 'div#info-strings yt-formatted-string'},
+                        {'type': 'css', 'value': 'div#date yt-formatted-string'},
+                        {'type': 'tag_id', 'tag': 'div', 'id': 'info-strings'},
+                    ]
                     upload_date = None
-                    if info_text:
-                        date_text = info_text.find('yt-formatted-string').text
-                        # "YYYY. MM. DD." 형식을 "YYYY-MM-DD" 형식으로 변환
-                        date_match = re.search(r'(\d{4})\. (\d{1,2})\. (\d{1,2})\.', date_text)
+                    date_text = find_with_selectors(soup, upload_date_selectors)
+                    if date_text:
+                        date_match = re.search(r'(\d{4})\. ?(\d{1,2})\. ?(\d{1,2})\.', date_text)
                         if date_match:
                             year, month, day = date_match.groups()
                             upload_date = f"{year}.{month:0>2}.{day:0>2}"
