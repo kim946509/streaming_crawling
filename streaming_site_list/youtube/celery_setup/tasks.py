@@ -1,90 +1,32 @@
 from celery import shared_task
-import logging
 from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler
-from streaming_site_list.youtube.models import YouTubeSongViewCount
-from datetime import datetime
-import pandas as pd
-from pathlib import Path
+import logging
 
-# 로거 설정
 logger = logging.getLogger(__name__)
 
-# CSV 파일 저장 경로 설정
-CSV_DIR = Path("song_crawling_result_csv/youtube")
-CSV_DIR.mkdir(parents=True, exist_ok=True)
-
-def save_to_csv(results, task_id=None):
-    """
-    크롤링 결과를 CSV 파일로 저장
-    """
+@shared_task
+def YouTubeSongCrawlingTask():
+    """⬇️ 여기에 크롤링 하길 원하는 노래의 유튜브 주소를 추가하면 크롤링됩니다 👍🏻"""
+    urls = [
+        "https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s", 
+        "https://www.youtube.com/watch?v=T4gsXNcF4Z0", "https://www.youtube.com/watch?v=-VQx4dePV5I", 
+        "https://www.youtube.com/watch?v=ecTQx5JNZBA", "https://www.youtube.com/watch?v=NiTwT05VgPA", 
+        "https://www.youtube.com/watch?v=nZpOGr1C8es", "https://www.youtube.com/watch?v=M1MFK5rWUpU", 
+        "https://www.youtube.com/watch?v=xpSJnLMCRxc", "https://www.youtube.com/watch?v=6hhhleiuaJA", 
+        "https://www.youtube.com/watch?v=jKY7pm7xlLk", "https://www.youtube.com/watch?v=C36Y5fmPnrQ", 
+        "https://www.youtube.com/watch?v=cpfFpC5xrrY", "https://www.youtube.com/watch?v=TlkHKmjha3U", 
+        "https://www.youtube.com/watch?v=M1MFK5rWUpU", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
+        "https://www.youtube.com/watch?v=z7WJw6SY0m0", "https://www.youtube.com/watch?v=ecTQx5JNZBA", 
+        "https://www.youtube.com/watch?v=2r0Wh1uEiuE", "https://www.youtube.com/watch?v=R6VH1qB-Hlg", 
+        "https://www.youtube.com/watch?v=HSUgcYisbmw", "https://www.youtube.com/watch?v=fi-QYKZP1d0", 
+        "https://www.youtube.com/watch?v=uIcpEprBKUA", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
+        "https://www.youtube.com/watch?v=r8clc_Vwahs", "https://www.youtube.com/watch?v=z7WJw6SY0m0", 
+        "https://www.youtube.com/watch?v=jn__gJ-7-vE", "https://www.youtube.com/watch?v=61yiWvXwB74", 
+        "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
+    ]
     try:
-        # 현재 시간을 파일명에 포함
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"Youtube_{timestamp}.csv"
-        if task_id:
-            filename = f"Youtube_{task_id}_{timestamp}.csv"
-        
-        filepath = CSV_DIR / filename
-        
-        # 결과를 DataFrame으로 변환
-        df = pd.DataFrame.from_dict(results, orient='index')
-        df.index.name = 'song_id'
-        df.reset_index(inplace=True)
-        
-        # CSV 파일로 저장
-        df.to_csv(filepath, index=False, encoding='utf-8-sig')
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
-        return str(filepath)
+        logger.info("🚀 유튜브 크롤링 시작")
+        YouTubeSongCrawler(urls)
+        logger.info("✅ 유튜브 크롤링 완료")
     except Exception as e:
-        logger.error(f"❌ CSV 파일 저장 실패: {str(e)}")
-        return None
-
-@shared_task(
-    name='streaming_site_list.youtube.celery_setup.tasks.YouTubeSongCrawlingTask',
-    bind=True,
-    max_retries=3,
-    default_retry_delay=300  # 5분 후 재시도
-)
-def YouTubeSongCrawlingTask(self, song_ids):
-    """
-    유튜브 조회수 크롤링을 실행하는 Celery 태스크
-
-    Args:
-        song_ids (list): 크롤링할 유튜브 동영상 ID 리스트
-
-    Returns:
-        dict: 크롤링 결과
-    """
-    try:
-        logger.info(f"유튜브 조회수 크롤링 시작 - {len(song_ids)}개 동영상")
-        start_time = datetime.now()
-
-        # 크롤링 실행
-        results = YouTubeSongCrawler(song_ids)
-        
-        # CSV 파일로 저장
-        csv_path = save_to_csv(results, self.request.id)
-        
-        # 크롤링 완료 시간 기록
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        
-        logger.info(f"크롤링 완료 - 소요시간: {duration:.2f}초")
-        return {
-            'status': 'success',
-            'song_count': len(song_ids),
-            'duration': duration,
-            'csv_path': csv_path,
-            'results': results
-        }
-
-    except Exception as e:
-        logger.error(f"크롤링 중 오류 발생: {str(e)}", exc_info=True)
-        # 재시도 횟수가 남아있으면 재시도
-        if self.request.retries < self.max_retries:
-            logger.info(f"크롤링 재시도 ({self.request.retries + 1}/{self.max_retries})")
-            raise self.retry(exc=e)
-        return {
-            'status': 'error',
-            'error_message': str(e)
-        }
+        logger.error(f"❌ 오류 발생: {e}", exc_info=True)
