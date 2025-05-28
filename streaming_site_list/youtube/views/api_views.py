@@ -6,7 +6,10 @@ from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongV
 
 # ---------- ⬇️ crawler 함수 호출 ----------
 from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler, save_each_to_csv
-from streaming_site_list.youtube.celery_setup.tasks import YouTubeSongCrawlingTask, youtube_crawl_task
+from streaming_site_list.youtube.celery_setup.tasks import (
+    youtube_crawl_rhoonart,
+
+)
 
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
@@ -86,8 +89,16 @@ class YouTubeSongViewCountAPIView(APIView):
                     'results': results
                 }, status=status.HTTP_200_OK)
             else:
-                # Celery task로 예약
-                youtube_crawl_task.delay(urls, company_name)
+                # 고객사별로 Celery task 나누기
+                if company_name == "rhoonart":
+                    youtube_crawl_rhoonart.delay(urls, company_name)
+                # elif company_name == "":
+                #     pass
+                else:
+                    return Response({
+                        'error': f'알 수 없는 company_name: {company_name}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
                 return Response({
                     'message': '크롤링 작업이 성공적으로 예약되었습니다.',
                     'task_info': {
