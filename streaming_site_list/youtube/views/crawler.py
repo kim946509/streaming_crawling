@@ -17,15 +17,75 @@ import logging, time, re
 import pandas as pd
 from pathlib import Path
 
-# ---------- CSV 파일 저장 경로 설정 ----------
-CSV_DIR = Path("song_crawling_result_csv/youtube")
-CSV_DIR.mkdir(exist_ok=True)
-
-# ---------- logging 설정 ----------
+'''===================== logging 설정 ====================='''
 logger = logging.getLogger(__name__)
 
+SERVICE_NAMES = ["youtube", "youtube_music", "genie"]
 
-# ---------- ⬇️ driver 설정 ----------
+'''===================== ⬇️ 고객사/서비스별 폴더 생성 함수 ====================='''
+def get_csv_dir(company_name, service_name, base_dir='csv_folder'):
+    dir_path = Path(base_dir) / company_name / service_name
+    dir_path.mkdir(parents=True, exist_ok=True)
+    return dir_path
+
+
+'''===================== ⬇️ 고객사 하위에 서비스별 폴더를 모두 생성 함수 ====================='''
+def make_service_dirs_for_company(company_name, base_dir='csv_folder'):
+    for service in SERVICE_NAMES:
+        dir_path = Path(base_dir) / company_name / service
+        dir_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"✅ {company_name} 하위에 {service} 폴더 생성 완료")
+
+'''===================== ⬇️ CSV 파일 저장 함수 ====================='''
+def save_each_to_csv(results, company_name):
+    """
+    각 곡별로 service_name에 따라 고객사/서비스별 폴더에 CSV 저장
+    """
+    make_service_dirs_for_company(company_name)
+    filepaths = {}
+    for song_id, data in results.items():
+        service_name = data.get('service_name', 'youtube')  # 기본값 youtube
+        CSV_DIR = Path('rhoonart') / company_name / service_name
+
+        if data.get('view_count') is not None:
+            try:
+                data['view_count'] = int(data['view_count'])
+            except (ValueError, TypeError):
+                data['view_count'] = None
+                logger.error(f"❌ 조회수 변환 실패: {data['view_count']}")
+
+        song_name = data.get('song_name', 'unknown')
+        # 파일명에 사용할 수 없는 문자 제거 및 공백을 언더바로 변환
+        song_name_clean = re.sub(r'[\\/:*?"<>|]', '', song_name)
+        song_name_clean = song_name_clean.replace(' ', '_')
+        if not song_name_clean:
+            song_name_clean = 'unknown'
+        filename = f"{song_name_clean}.csv" # 파일명
+        filepath = CSV_DIR / filename # 파일 저장 경로
+
+        ''' ⬇️ DataFrame 생성 (컬럼 순서 커스텀 가능)'''
+        columns = ['song_name', 'view_count', 'youtube_url', 'upload_date', 'extracted_date']
+        new_df = pd.DataFrame([{col: data.get(col) for col in columns}])
+
+        # 기존 파일이 있으면 읽어서 누적, 없으면 새로 생성
+        if filepath.exists():
+            try:
+                old_df = pd.read_csv(filepath)
+                combined_df = pd.concat([old_df, new_df], ignore_index=True)
+            except Exception as e:
+                logger.error(f"❌ 기존 CSV 읽기 실패: {filepath} - {e}")
+                combined_df = new_df
+        else:
+            combined_df = new_df
+
+        # 저장
+        combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        filepaths[song_name] = str(filepath)
+    return filepaths
+
+
+'''===================== ⬇️ driver 설정 ====================='''
 @contextmanager
 def setup_driver():
     options = Options()
@@ -57,68 +117,8 @@ def setup_driver():
         driver.quit()
         logger.info("🔴 Chrome 브라우저 종료")
 
-# ---------- ⬇️ CSV 파일 저장 함수 ----------
-def save_each_to_csv(results):
-    """
-    각 곡별로 CSV 파일을 저장
-    """
-    filepaths = {}
-    for song_id, data in results.items():
-        if data.get('view_count') is not None:
-            try:
-                data['view_count'] = int(data['view_count'])
-            except (ValueError, TypeError):
-                data['view_count'] = None
-                logger.error(f"❌ 조회수 변환 실패: {data['view_count']}")
 
-        song_name = data.get('song_name', 'unknown')
-        # 파일명에 사용할 수 없는 문자 제거 및 공백을 언더바로 변환
-        song_name_clean = re.sub(r'[\\/:*?"<>|]', '', song_name)
-        song_name_clean = song_name_clean.replace(' ', '_')
-        if not song_name_clean:
-            song_name_clean = 'unknown'
-        filename = f"{song_name_clean}_{datetime.now().strftime('%y%m%d_%H%M%S')}.csv"
-        filepath = CSV_DIR / filename
-
-        ''' ⬇️ DataFrame 생성 (컬럼 순서 커스텀 가능)'''
-        columns = ['song_name', 'view_count', 'youtube_url', 'upload_date', 'extracted_date']
-        df = pd.DataFrame([{col: data.get(col) for col in columns}])
-        df.to_csv(filepath, index=False, encoding='utf-8-sig')
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
-        filepaths[song_name] = str(filepath)
-    return filepaths
-
-# ---------- ⬇️ DB 저장 함수 ----------
-def save_to_db(results):
-    """
-    크롤링 결과를 DB에 저장 (중복 song_id는 update)
-    """
-    def to_db_date_format(date_str):
-        # '2025.05.28' 또는 '2025. 05. 28.' -> '2025-05-28'
-        if not date_str:
-            return None
-        # 공백 제거, 마지막 점 제거, 점을 하이픈으로 변환
-        date_str = date_str.strip().rstrip('.')
-        date_str = date_str.replace(' ', '')
-        return date_str.replace('.', '-')
-
-    for song_id, data in results.items():
-        try:
-            YouTubeSongViewCount.objects.update_or_create(
-                song_id=song_id,
-                defaults={
-                    'song_name': data['song_name'],
-                    'view_count': data['view_count'],
-                    'youtube_url': f"https://www.youtube.com/watch?v={song_id}",
-                    'upload_date': to_db_date_format(data['upload_date']),
-                    'extracted_date': to_db_date_format(data['extracted_date'])
-                }
-            )
-        except Exception as e:
-            logger.error(f"❌ DB 저장 실패 (song_id: {song_id}): {e}")
-
-
-# ---------- ⬇️ 조회수 텍스트를 숫자로 변환하는 함수 ----------
+'''===================== ⬇️ 조회수 텍스트를 숫자로 변환하는 함수 ====================='''
 def convert_view_count(view_count_text):
     """
     예: "1.5만 회" -> 15000, "2.3천 회" -> 2300, "1,234회" -> 1234, "9회" -> 9
@@ -146,7 +146,7 @@ def convert_view_count(view_count_text):
         return None
 
 
-# ---------- ⬇️ 유튜브 URL에서 song_id 추출하는 함수 ----------
+'''===================== ⬇️ 유튜브 URL에서 song_id 추출하는 함수 ====================='''
 def extract_song_id(youtube_url):
     """
     유튜브 URL에서 song_id 추출
@@ -158,7 +158,7 @@ def extract_song_id(youtube_url):
     return None
 
 
-# ---------- ⬇️ 크롤링 함수 ----------
+'''===================== ⬇️ 크롤링 함수 ====================='''
 def YouTubeSongCrawler(urls):
     """
     유튜브 URL 리스트를 받아 각 동영상의 정보를 크롤링
@@ -228,6 +228,15 @@ def YouTubeSongCrawler(urls):
                     soup = BeautifulSoup(html, 'html.parser')
 
                     # 동영상 제목 추출 (여러 selector 시도)
+                    TITLE_SELECTORS = [
+                            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
+                            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
+                            {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
+                            {'type': 'css', 'value': 'h1.title'},
+                            {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
+                            {'type': 'css', 'value': 'h1#title'},
+                        ]
+                    
                     song_name = None
                     for selector in TITLE_SELECTORS:
                         result = None
@@ -272,14 +281,14 @@ def YouTubeSongCrawler(urls):
                         'extracted_date': extracted_date
                     }
 
-                    logger.info(f"✅ {song_id} 크롤링 성공 - 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
+                    logger.info(f"✅ 크롤링 성공 - 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
 
                     # # 디버깅용 HTML 저장
                     # with open(f"youtube_debug_{song_id}.html", "w", encoding="utf-8") as f:
                     #     f.write(driver.page_source)
 
                 except Exception as e:
-                    logger.error(f"❌ {song_id} 크롤링 실패: {e}", exc_info=True)
+                    logger.error(f"❌ {song_name} 크롤링 실패: {e}", exc_info=True)
                     results[song_id] = {
                         'song_name': None,
                         'view_count': None,
@@ -289,17 +298,13 @@ def YouTubeSongCrawler(urls):
                     }
                     continue
 
-        # 크롤링 결과를 DB와 CSV 파일에 저장
-        save_to_db(results)
-        save_each_to_csv(results)
-        logger.info(f"✅ 크롤링 결과 저장 완료 - CSV: {save_each_to_csv(results)}")
-
         return results
     except Exception as e:
         logger.error(f"❌ 크롤러 실행 중 오류 발생: {e}", exc_info=True)
         return results
 
-# ---------- ⬇️ 여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환 함수 ----------
+
+'''===================== ⬇️ 여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환 함수 ====================='''
 def find_with_selectors(soup, selectors, get_text=True):
     """
     여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환
@@ -316,13 +321,3 @@ def find_with_selectors(soup, selectors, get_text=True):
         if el:
             return el.text.strip() if get_text else el
     return None
-
-# 동영상 제목 추출용 selector 리스트 상단에 선언
-TITLE_SELECTORS = [
-    {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
-    {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
-    {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
-    {'type': 'css', 'value': 'h1.title'},
-    {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
-    {'type': 'css', 'value': 'h1#title'},
-]
