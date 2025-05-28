@@ -37,7 +37,7 @@ class YouTubeSongViewCountAPIView(APIView):
                 ),
                 'company_name': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description="크롤링할 고객사 명"
+                    description="크롤링할 고객사 명(영어로 입력해주세요. 예: rhoonart)"
                 ),
                 'immediate': openapi.Schema(
                     type=openapi.TYPE_BOOLEAN,
