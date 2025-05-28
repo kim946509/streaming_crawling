@@ -20,32 +20,23 @@ from pathlib import Path
 '''===================== logging 설정 ====================='''
 logger = logging.getLogger(__name__)
 
-SERVICE_NAMES = ["youtube", "youtube_music", "genie"]
-
-'''===================== ⬇️ 고객사/서비스별 폴더 생성 함수 ====================='''
-def get_csv_dir(company_name, service_name, base_dir='csv_folder'):
-    dir_path = Path(base_dir) / company_name / service_name
-    dir_path.mkdir(parents=True, exist_ok=True)
-    return dir_path
-
 
 '''===================== ⬇️ 고객사 하위에 서비스별 폴더를 모두 생성 함수 ====================='''
-def make_service_dirs_for_company(company_name, base_dir='csv_folder'):
-    for service in SERVICE_NAMES:
-        dir_path = Path(base_dir) / company_name / service
-        dir_path.mkdir(parents=True, exist_ok=True)
-        logger.info(f"✅ {company_name} 하위에 {service} 폴더 생성 완료")
-
+def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
+    dir_path = Path(base_dir) / company_name / service_name
+    dir_path.mkdir(parents=True, exist_ok=True)
+    logger.info(f"✅ {company_name} 하위에 {service_name} 폴더 생성 완료")
+    
+    
 '''===================== ⬇️ CSV 파일 저장 함수 ====================='''
-def save_each_to_csv(results, company_name):
+def save_each_to_csv(results, company_name, service_name):
     """
-    각 곡별로 service_name에 따라 고객사/서비스별 폴더에 CSV 저장
+    각 곡별로 company_name/service_name 폴더에 CSV 저장
     """
-    make_service_dirs_for_company(company_name)
+    make_service_dir(company_name, service_name)
     filepaths = {}
     for song_id, data in results.items():
-        service_name = data.get('service_name', 'youtube')  # 기본값 youtube
-        CSV_DIR = Path('rhoonart') / company_name / service_name
+        CSV_DIR = Path('csv_folder/') / company_name / service_name
 
         if data.get('view_count') is not None:
             try:
@@ -169,9 +160,7 @@ def YouTubeSongCrawler(urls):
                 'view_count': int,  # 조회수 (숫자형)
                 'youtube_url': str, # 유튜브 URL
                 'upload_date': str, # 업로드 날짜 (YYYY.MM.DD 형식)
-                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY.MM.DD 형식)
-            }
-        }
+                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY.MM.DD 형식)}}
     """
     results = {}
     url_id_map = {}
@@ -197,10 +186,10 @@ def YouTubeSongCrawler(urls):
             wait = WebDriverWait(driver, 10)
             for song_id, url in url_id_map.items():
                 try:
-                    # 현재 크롤링 시간 기록
+                    # 현재 크롤링 날짜 기록
                     extracted_date = datetime.now().strftime('%Y.%m.%d')
                     youtube_url = url  # 입력받은 원본 URL 사용
-
+                    
                     # 페이지 로드
                     driver.get(youtube_url)
 
@@ -229,48 +218,50 @@ def YouTubeSongCrawler(urls):
 
                     # 동영상 제목 추출 (여러 selector 시도)
                     TITLE_SELECTORS = [
-                            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
-                            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
-                            {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
-                            {'type': 'css', 'value': 'h1.title'},
-                            {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
-                            {'type': 'css', 'value': 'h1#title'},
-                        ]
+                        {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
+                        {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
+                        {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
+                        {'type': 'css', 'value': 'h1.title'},
+                        {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
+                        {'type': 'css', 'value': 'h1#title'},
+                    ]
                     
-                    song_name = None
-                    for selector in TITLE_SELECTORS:
-                        result = None
-                        if selector.get('type') == 'css':
-                            result = soup.select_one(selector['value'])
-                        elif selector.get('type') == 'tag_class':
-                            result = soup.find(selector['tag'], class_=selector['class'])
-                        elif selector.get('type') == 'tag_id':
-                            result = soup.find(selector['tag'], id=selector['id'])
-                        logger.debug(f"selector 시도: {selector} → {'성공' if result else '실패'}")
-                        if result:
-                            song_name = result.text.strip()
-                            logger.debug(f"selector {selector}로 추출된 제목: {song_name}")
-                            break
+                    song_name = find_with_selectors(soup, TITLE_SELECTORS, get_text=True)
                     if not song_name:
                         song_name = "제목 없음"
                         logger.warning("동영상 제목을 찾지 못했습니다. 모든 selector 실패.")
                     logger.info(f"제목: {song_name}")
 
-                    # 조회수 추출
-                    view_count_element = soup.find('span', class_='view-count')
-                    view_count_text = view_count_element.text.strip() if view_count_element else None
+                    # 조회수 추출 (여러 selector 시도)
+                    VIEW_COUNT_SELECTORS = [
+                        {'type': 'css', 'value': 'span.view-count'},
+                        {'type': 'css', 'value': 'span#view-count'},
+                        {'type': 'css', 'value': 'div#count span.view-count'},
+                        {'type': 'css', 'value': 'div#info span.view-count'},
+                        {'type': 'css', 'value': 'span.ytd-video-view-count-renderer'},
+                        {'type': 'css', 'value': 'yt-view-count-renderer span.view-count'},
+                    ]
+                    view_count_text = find_with_selectors(soup, VIEW_COUNT_SELECTORS, get_text=True)
                     view_count = convert_view_count(view_count_text)
 
-                    # 업로드 날짜 추출
-                    info_text = soup.find('div', {'id': 'info-strings'})
+                    # 업로드 날짜 추출 (여러 selector 시도)
+                    UPLOAD_DATE_SELECTORS = [
+                        {'type': 'css', 'value': 'div#info-strings yt-formatted-string'},
+                        {'type': 'css', 'value': 'div#date yt-formatted-string'},
+                        {'type': 'css', 'value': 'span.date'},
+                        {'type': 'css', 'value': 'div#info-strings'},
+                        {'type': 'css', 'value': 'yt-formatted-string#info-strings'},
+                    ]
                     upload_date = None
-                    if info_text:
-                        date_text = info_text.find('yt-formatted-string').text
-                        # "YYYY. MM. DD." 형식을 "YYYY-MM-DD" 형식으로 변환
-                        date_match = re.search(r'(\d{4})\. (\d{1,2})\. (\d{1,2})\.', date_text)
+                    date_text = find_with_selectors(soup, UPLOAD_DATE_SELECTORS, get_text=True)
+                    if date_text:
+                        # "YYYY. MM. DD." 또는 "YYYY.MM.DD" 형식을 "YYYY.MM.DD" 형식으로 변환
+                        date_match = re.search(r'(\d{4})[.\-\/\s]*(\d{1,2})[.\-\/\s]*(\d{1,2})', date_text)
                         if date_match:
                             year, month, day = date_match.groups()
-                            upload_date = f"{year}.{month:0>2}.{day:0>2}"
+                            upload_date = f"{year}.{int(month):02d}.{int(day):02d}"
+                        else:
+                            upload_date = date_text.strip()
 
                     # 결과 저장
                     results[song_id] = {
