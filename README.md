@@ -17,10 +17,11 @@ streaming_crawling
 │  ├─ celery.py                         # celery 설정한 파일
 │  ├─ settings.py
 │  ├─ urls.py
-├─ song_crawling_result_csv             # 크롤링 결과 csv 저장 폴더
-│  ├─ gennie/
-│  ├─ youtube/
-│  └─ youtube_music/
+├─ csv_folder                           # 크롤링 결과 csv를 저장 폴더
+│  └─ rhoonart                          # 고객사명으로 구분
+│     ├─ genie/
+│     ├─ youtube/
+│     └─ youtube_music/
 ├─ streaming_site_list                  # 크롤링할 스트리밍 플랫폼 관리 app 폴더
 │  ├─ __init__.py
 │  └─ youtube                           # 유튜브에서 노래 조회수 추출 설정하는 앱
