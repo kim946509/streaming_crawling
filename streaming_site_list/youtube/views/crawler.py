@@ -80,29 +80,39 @@ def save_each_to_csv(results):
         filename = f"{song_name_clean}_{datetime.now().strftime('%y%m%d_%H%M%S')}.csv"
         filepath = CSV_DIR / filename
 
-        # DataFrame 생성 (한 곡만)
-        df = pd.DataFrame([data])
-        df.index.name = 'song_id'
-        df.reset_index(inplace=True)
+        ''' ⬇️ DataFrame 생성 (컬럼 순서 커스텀 가능)'''
+        columns = ['song_name', 'view_count', 'youtube_url', 'upload_date', 'extracted_date']
+        df = pd.DataFrame([{col: data.get(col) for col in columns}])
         df.to_csv(filepath, index=False, encoding='utf-8-sig')
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
-        filepaths[song_id] = str(filepath)
+        filepaths[song_name] = str(filepath)
     return filepaths
 
 # ---------- ⬇️ DB 저장 함수 ----------
 def save_to_db(results):
     """
-    크롤링 결과를 DB에 저장
+    크롤링 결과를 DB에 저장 (중복 song_id는 update)
     """
+    def to_db_date_format(date_str):
+        # '2025.05.28' 또는 '2025. 05. 28.' -> '2025-05-28'
+        if not date_str:
+            return None
+        # 공백 제거, 마지막 점 제거, 점을 하이픈으로 변환
+        date_str = date_str.strip().rstrip('.')
+        date_str = date_str.replace(' ', '')
+        return date_str.replace('.', '-')
+
     for song_id, data in results.items():
         try:
-            YouTubeSongViewCount.objects.create(
+            YouTubeSongViewCount.objects.update_or_create(
                 song_id=song_id,
-                song_name=data['song_name'],
-                view_count=data['view_count'],
-                youtube_url=f"https://www.youtube.com/watch?v={song_id}",
-                upload_date=data['upload_date'],
-                extracted_date=data['extracted_date']
+                defaults={
+                    'song_name': data['song_name'],
+                    'view_count': data['view_count'],
+                    'youtube_url': f"https://www.youtube.com/watch?v={song_id}",
+                    'upload_date': to_db_date_format(data['upload_date']),
+                    'extracted_date': to_db_date_format(data['extracted_date'])
+                }
             )
         except Exception as e:
             logger.error(f"❌ DB 저장 실패 (song_id: {song_id}): {e}")
@@ -145,24 +155,6 @@ def extract_song_id(youtube_url):
     match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})", youtube_url)
     if match:
         return match.group(1)
-    return None
-
-
-def find_with_selectors(soup, selectors, get_text=True):
-    """
-    여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환
-    """
-    for selector in selectors:
-        if selector.get('type') == 'css':
-            el = soup.select_one(selector['value'])
-        elif selector.get('type') == 'tag_class':
-            el = soup.find(selector['tag'], class_=selector['class'])
-        elif selector.get('type') == 'tag_id':
-            el = soup.find(selector['tag'], id=selector['id'])
-        else:
-            continue
-        if el:
-            return el.text.strip() if get_text else el
     return None
 
 
@@ -213,7 +205,22 @@ def YouTubeSongCrawler(urls):
                     driver.get(youtube_url)
 
                     # 동적 로딩을 위한 대기
-                    wait.until(EC.presence_of_element_located((By.TAG_NAME, "ytd-watch-metadata")))
+                    selectors = [
+                        "h1.style-scope.ytd-watch-metadata",
+                        "h1.style-scope.ytd-watch-metadata > yt-formatted-string",
+                        "yt-formatted-string.style-scope.ytd-watch-metadata"
+                    ]
+                    found = False
+                    for sel in selectors:
+                        try:
+                            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
+                            found = True
+                            break
+                        except:
+                            continue
+                    if not found:
+                        # html 저장 등 추가
+                        raise Exception("제목 selector를 찾지 못함")
                     time.sleep(2)  # 추가 대기 시간
 
                     # HTML 파싱
@@ -221,32 +228,37 @@ def YouTubeSongCrawler(urls):
                     soup = BeautifulSoup(html, 'html.parser')
 
                     # 동영상 제목 추출 (여러 selector 시도)
-                    title_selectors = [
-                        {'type': 'css', 'value': 'h1.title'},
-                        {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
-                        {'type': 'tag_class', 'tag': 'h1', 'class': 'style-scope ytd-watch-metadata'},
-                    ]
-                    song_name = find_with_selectors(soup, title_selectors)
+                    song_name = None
+                    for selector in TITLE_SELECTORS:
+                        result = None
+                        if selector.get('type') == 'css':
+                            result = soup.select_one(selector['value'])
+                        elif selector.get('type') == 'tag_class':
+                            result = soup.find(selector['tag'], class_=selector['class'])
+                        elif selector.get('type') == 'tag_id':
+                            result = soup.find(selector['tag'], id=selector['id'])
+                        logger.debug(f"selector 시도: {selector} → {'성공' if result else '실패'}")
+                        if result:
+                            song_name = result.text.strip()
+                            logger.debug(f"selector {selector}로 추출된 제목: {song_name}")
+                            break
+                    if not song_name:
+                        song_name = "제목 없음"
+                        logger.warning("동영상 제목을 찾지 못했습니다. 모든 selector 실패.")
+                    logger.info(f"제목: {song_name}")
 
-                    # 조회수 추출 (여러 selector 시도)
-                    view_count_selectors = [
-                        {'type': 'css', 'value': 'span.view-count'},
-                        {'type': 'css', 'value': 'span.ytd-video-view-count-renderer'},
-                        {'type': 'tag_class', 'tag': 'span', 'class': 'view-count'},
-                    ]
-                    view_count_text = find_with_selectors(soup, view_count_selectors)
+                    # 조회수 추출
+                    view_count_element = soup.find('span', class_='view-count')
+                    view_count_text = view_count_element.text.strip() if view_count_element else None
                     view_count = convert_view_count(view_count_text)
 
-                    # 업로드 날짜 추출 (여러 selector 시도)
-                    upload_date_selectors = [
-                        {'type': 'css', 'value': 'div#info-strings yt-formatted-string'},
-                        {'type': 'css', 'value': 'div#date yt-formatted-string'},
-                        {'type': 'tag_id', 'tag': 'div', 'id': 'info-strings'},
-                    ]
+                    # 업로드 날짜 추출
+                    info_text = soup.find('div', {'id': 'info-strings'})
                     upload_date = None
-                    date_text = find_with_selectors(soup, upload_date_selectors)
-                    if date_text:
-                        date_match = re.search(r'(\d{4})\. ?(\d{1,2})\. ?(\d{1,2})\.', date_text)
+                    if info_text:
+                        date_text = info_text.find('yt-formatted-string').text
+                        # "YYYY. MM. DD." 형식을 "YYYY-MM-DD" 형식으로 변환
+                        date_match = re.search(r'(\d{4})\. (\d{1,2})\. (\d{1,2})\.', date_text)
                         if date_match:
                             year, month, day = date_match.groups()
                             upload_date = f"{year}.{month:0>2}.{day:0>2}"
@@ -261,6 +273,10 @@ def YouTubeSongCrawler(urls):
                     }
 
                     logger.info(f"✅ {song_id} 크롤링 성공 - 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
+
+                    # # 디버깅용 HTML 저장
+                    # with open(f"youtube_debug_{song_id}.html", "w", encoding="utf-8") as f:
+                    #     f.write(driver.page_source)
 
                 except Exception as e:
                     logger.error(f"❌ {song_id} 크롤링 실패: {e}", exc_info=True)
@@ -282,3 +298,31 @@ def YouTubeSongCrawler(urls):
     except Exception as e:
         logger.error(f"❌ 크롤러 실행 중 오류 발생: {e}", exc_info=True)
         return results
+
+# ---------- ⬇️ 여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환 함수 ----------
+def find_with_selectors(soup, selectors, get_text=True):
+    """
+    여러 selector를 순차적으로 시도하여 첫 번째로 찾은 element(또는 text)를 반환
+    """
+    for selector in selectors:
+        if selector.get('type') == 'css':
+            el = soup.select_one(selector['value'])
+        elif selector.get('type') == 'tag_class':
+            el = soup.find(selector['tag'], class_=selector['class'])
+        elif selector.get('type') == 'tag_id':
+            el = soup.find(selector['tag'], id=selector['id'])
+        else:
+            continue
+        if el:
+            return el.text.strip() if get_text else el
+    return None
+
+# 동영상 제목 추출용 selector 리스트 상단에 선언
+TITLE_SELECTORS = [
+    {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
+    {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
+    {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
+    {'type': 'css', 'value': 'h1.title'},
+    {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
+    {'type': 'css', 'value': 'h1#title'},
+]
