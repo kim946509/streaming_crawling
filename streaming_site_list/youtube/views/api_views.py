@@ -39,38 +39,28 @@ class YouTubeSongViewCountAPIView(APIView):
                     type=openapi.TYPE_STRING,
                     description="크롤링할 고객사 명(영어로 입력해주세요. 예: rhoonart)"
                 ),
+                'service_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="크롤링할 서비스 명(영어로 입력해주세요. 예: youtube)"
+                ),
                 'immediate': openapi.Schema(
                     type=openapi.TYPE_BOOLEAN,
                     description="즉시 크롤링 실행 여부 (기본값: False)",
                     default=False
                 )
             },
-            required=['urls', 'company_name'],
+            required=['urls', 'company_name', 'service_name'],
             example={
                 'urls': ["https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s"],
                 'company_name': "rhoonart",
                 'immediate': False
             }
         ),
-        responses={
-            202: openapi.Response(
-                description="크롤링 요청이 성공적으로 처리됨",
-                examples={
-                    "application/json": {
-                        "message": "크롤링 작업이 성공적으로 예약되었습니다.",
-                        "task_info": {
-                            "scheduled_time": "2025-05-27 17:00:00 KST",
-                            "song_count": 2
-                        }
-                    }
-                }
-            ),
-            400: "잘못된 요청"
-        }
     )
     def post(self, request):
         urls = request.data.get('urls', [])
         company_name = request.data.get('company_name', 'default')
+        service_name = request.data.get('service_name', 'default')
         immediate = request.data.get('immediate', False)
 
         if not urls:
@@ -83,7 +73,7 @@ class YouTubeSongViewCountAPIView(APIView):
             if immediate:
                 # 즉시 실행
                 results = YouTubeSongCrawler(urls)
-                save_each_to_csv(results, company_name)
+                save_each_to_csv(results, company_name, service_name)
                 return Response({
                     'message': '크롤링이 즉시 실행되었습니다.',
                     'results': results
