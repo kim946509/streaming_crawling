@@ -95,7 +95,8 @@ def save_to_db(results):
         except Exception as e:
             logger.error(f"❌ DB 저장 실패 (song_id: {song_id}): {e}")
 
-# ---------- ⬇️ 조회수 텍스트를 숫자로 변환하는 함수 정의 ----------
+
+# ---------- ⬇️ 조회수 텍스트를 숫자로 변환하는 함수 ----------
 def convert_view_count(view_count_text):
     """
     예: "1.5만 회" -> 15000, "2.3천 회" -> 2300, "1,234회" -> 1234
@@ -104,7 +105,7 @@ def convert_view_count(view_count_text):
         return None
         
     # 쉼표와 "회" 제거
-    view_count_text = view_count_text.replace(',', '').replace('회', '').strip()
+    view_count_text = view_count_text.replace(',', '').replace('조회수', '').strip()
     
     try:
         # "만" 단위 처리
@@ -122,57 +123,82 @@ def convert_view_count(view_count_text):
         logger.error(f"조회수 변환 실패: {view_count_text}")
         return None
 
-# ---------- ⬇️ 크롤링 함수 정의 ----------
-def YouTubeSongCrawler(song_ids):
+
+# ---------- ⬇️ 유튜브 URL에서 song_id 추출하는 함수 ----------
+def extract_song_id(youtube_url):
     """
-    YouTube 동영상들의 조회수와 업로드 날짜를 크롤링합니다.
-    
-    Args:
-        song_ids (list): YouTube 동영상 ID 리스트
-    
+    유튜브 URL에서 song_id 추출
+    """
+    # 일반적인 유튜브 URL 패턴
+    match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})", youtube_url)
+    if match:
+        return match.group(1)
+    return None
+
+
+# ---------- ⬇️ 크롤링 함수 ----------
+def YouTubeSongCrawler(urls):
+    """
+    유튜브 URL 리스트를 받아 각 동영상의 정보를 크롤링
     Returns:
         dict: {
             song_id: {
                 'song_name': str,  # 동영상 제목
                 'view_count': int,  # 조회수 (숫자형)
                 'youtube_url': str, # 유튜브 URL
-                'upload_date': str, # 업로드 날짜 (YYYY-MM-DD 형식)
-                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY-MM-DD HH:MM:SS 형식)
+                'upload_date': str, # 업로드 날짜 (YYYY.MM.DD 형식)
+                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY.MM.DD 형식)
             }
         }
     """
     results = {}
+    url_id_map = {}
+
+    # 각 url에서 song_id 추출
+    for url in urls:
+        song_id = extract_song_id(url)
+        if song_id:
+            url_id_map[song_id] = url
+        else:
+            # 유효하지 않은 URL 처리
+            results[url] = {
+                'song_name': None,
+                'view_count': None,
+                'youtube_url': url,
+                'upload_date': None,
+                'extracted_date': datetime.now().strftime('%Y-%m-%d'),
+                'error': '유효하지 않은 유튜브 URL'
+            }
 
     try:
         with setup_driver() as driver:
             wait = WebDriverWait(driver, 10)
-            
-            for song_id in song_ids:
+            for song_id, url in url_id_map.items():
                 try:
                     # 현재 크롤링 시간 기록
-                    extracted_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    youtube_url = f"https://www.youtube.com/watch?v={song_id}"
-                    
+                    extracted_date = datetime.now().strftime('%Y.%m.%d')
+                    youtube_url = url  # 입력받은 원본 URL 사용
+
                     # 페이지 로드
                     driver.get(youtube_url)
-                    
+
                     # 동적 로딩을 위한 대기
                     wait.until(EC.presence_of_element_located((By.TAG_NAME, "ytd-watch-metadata")))
                     time.sleep(2)  # 추가 대기 시간
-                    
+
                     # HTML 파싱
                     html = driver.page_source
                     soup = BeautifulSoup(html, 'html.parser')
-                    
+
                     # 동영상 제목 추출
                     title_element = soup.find('h1', {'class': 'style-scope ytd-watch-metadata'})
                     song_name = title_element.text.strip() if title_element else None
-                    
+
                     # 조회수 추출
                     view_count_element = soup.find('span', class_='view-count')
                     view_count_text = view_count_element.text.strip() if view_count_element else None
                     view_count = convert_view_count(view_count_text)
-                    
+
                     # 업로드 날짜 추출
                     info_text = soup.find('div', {'id': 'info-strings'})
                     upload_date = None
@@ -182,8 +208,8 @@ def YouTubeSongCrawler(song_ids):
                         date_match = re.search(r'(\d{4})\. (\d{1,2})\. (\d{1,2})\.', date_text)
                         if date_match:
                             year, month, day = date_match.groups()
-                            upload_date = f"{year}-{month:0>2}-{day:0>2}"
-                
+                            upload_date = f"{year}.{month:0>2}.{day:0>2}"
+
                     # 결과 저장
                     results[song_id] = {
                         'song_name': song_name,
@@ -192,25 +218,26 @@ def YouTubeSongCrawler(song_ids):
                         'upload_date': upload_date,
                         'extracted_date': extracted_date
                     }
-                    
+
                     logger.info(f"✅ {song_id} 크롤링 성공 - 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
-                    
+
                 except Exception as e:
                     logger.error(f"❌ {song_id} 크롤링 실패: {e}", exc_info=True)
                     results[song_id] = {
                         'song_name': None,
                         'view_count': None,
-                        'youtube_url': f"https://www.youtube.com/watch?v={song_id}",
+                        'youtube_url': url,
                         'upload_date': None,
-                        'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M')
+                        'extracted_date': datetime.now().strftime('%Y-%m-%d'),
+                        'error': str(e)
                     }
                     continue
-        
+
         # 크롤링 결과를 DB와 CSV 파일에 저장
         save_to_db(results)
         csv_filepath = save_to_csv(results)
         logger.info(f"✅ 크롤링 결과 저장 완료 - CSV: {csv_filepath}")
-        
+
         return results
     except Exception as e:
         logger.error(f"❌ 크롤러 실행 중 오류 발생: {e}", exc_info=True)
