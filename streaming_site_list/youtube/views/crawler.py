@@ -58,29 +58,34 @@ def setup_driver():
         logger.info("🔴 Chrome 브라우저 종료")
 
 # ---------- ⬇️ CSV 파일 저장 함수 ----------
-def save_to_csv(results, filename=None):
+def save_each_to_csv(results):
     """
-    크롤링 결과를 CSV 파일로 저장합니다.
+    각 곡별로 CSV 파일을 저장
     """
-    if filename is None:
-        filename = f"youtube_crawling_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    
-    filepath = CSV_DIR / filename
-    
-    # 결과를 DataFrame으로 변환
-    df = pd.DataFrame.from_dict(results, orient='index')
-    df.index.name = 'song_id'
-    df.reset_index(inplace=True)
-    
-    # CSV 파일로 저장
-    df.to_csv(filepath, index=False, encoding='utf-8-sig')
-    logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
-    return filepath
+    filepaths = {}
+    for song_id, data in results.items():
+        song_name = data.get('song_name', 'unknown')
+        # 파일명에 사용할 수 없는 문자 제거 및 공백을 언더바로 변환
+        song_name_clean = re.sub(r'[\\/:*?"<>|]', '', song_name)
+        song_name_clean = song_name_clean.replace(' ', '_')
+        if not song_name_clean:
+            song_name_clean = 'unknown'
+        filename = f"{song_name_clean}_{datetime.now().strftime('%y%m%d_%H%M%S')}.csv"
+        filepath = CSV_DIR / filename
+
+        # DataFrame 생성 (한 곡만)
+        df = pd.DataFrame([data])
+        df.index.name = 'song_id'
+        df.reset_index(inplace=True)
+        df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        filepaths[song_id] = str(filepath)
+    return filepaths
 
 # ---------- ⬇️ DB 저장 함수 ----------
 def save_to_db(results):
     """
-    크롤링 결과를 DB에 저장합니다.
+    크롤링 결과를 DB에 저장
     """
     for song_id, data in results.items():
         try:
@@ -99,13 +104,13 @@ def save_to_db(results):
 # ---------- ⬇️ 조회수 텍스트를 숫자로 변환하는 함수 ----------
 def convert_view_count(view_count_text):
     """
-    예: "1.5만 회" -> 15000, "2.3천 회" -> 2300, "1,234회" -> 1234
+    예: "1.5만 회" -> 15000, "2.3천 회" -> 2300, "1,234회" -> 1234, "9회" -> 9
     """
     if not view_count_text:
         return None
         
-    # 쉼표와 "회" 제거
-    view_count_text = view_count_text.replace(',', '').replace('조회수', '').strip()
+    # 쉼표, "조회수", "회" 제거
+    view_count_text = view_count_text.replace(',', '').replace('조회수', '').replace('회', '').strip()
     
     try:
         # "만" 단위 처리
@@ -166,7 +171,7 @@ def YouTubeSongCrawler(urls):
                 'view_count': None,
                 'youtube_url': url,
                 'upload_date': None,
-                'extracted_date': datetime.now().strftime('%Y-%m-%d'),
+                'extracted_date': datetime.now().strftime('%Y.%m.%d'),
                 'error': '유효하지 않은 유튜브 URL'
             }
 
@@ -228,15 +233,14 @@ def YouTubeSongCrawler(urls):
                         'view_count': None,
                         'youtube_url': url,
                         'upload_date': None,
-                        'extracted_date': datetime.now().strftime('%Y-%m-%d'),
-                        'error': str(e)
+                        'extracted_date': datetime.now().strftime('%Y.%m.%d'),
                     }
                     continue
 
         # 크롤링 결과를 DB와 CSV 파일에 저장
         save_to_db(results)
-        csv_filepath = save_to_csv(results)
-        logger.info(f"✅ 크롤링 결과 저장 완료 - CSV: {csv_filepath}")
+        save_each_to_csv(results)
+        logger.info(f"✅ 크롤링 결과 저장 완료 - CSV: {save_each_to_csv(results)}")
 
         return results
     except Exception as e:
