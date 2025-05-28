@@ -5,8 +5,8 @@ from streaming_site_list.youtube.models import YouTubeSongViewCount
 from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongViewCountSerializer
 
 # ---------- ⬇️ crawler 함수 호출 ----------
-from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler
-from streaming_site_list.youtube.celery_setup.tasks import YouTubeSongCrawlingTask
+from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler, save_each_to_csv
+from streaming_site_list.youtube.celery_setup.tasks import YouTubeSongCrawlingTask, youtube_crawl_task
 
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # ---------- ⬇️ API 함수 정의 ----------
 class YouTubeSongViewCountAPIView(APIView):
     @swagger_auto_schema(
-        operation_summary="유튜브 노래 조회수 및 업로드일 크롤링",
+        operation_summary="고객사별 유튜브 노래 조회수 및 업로드일 크롤링",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -32,31 +32,20 @@ class YouTubeSongViewCountAPIView(APIView):
                     items=openapi.Schema(type=openapi.TYPE_STRING),
                     description="크롤링할 유튜브 동영상 ID 목록"
                 ),
+                'company_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="크롤링할 고객사 명"
+                ),
                 'immediate': openapi.Schema(
                     type=openapi.TYPE_BOOLEAN,
                     description="즉시 크롤링 실행 여부 (기본값: False)",
                     default=False
                 )
             },
-            required=['urls'],
+            required=['urls', 'company_name'],
             example={
-                'urls': [
-                    "https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s", 
-                    "https://www.youtube.com/watch?v=T4gsXNcF4Z0", "https://www.youtube.com/watch?v=-VQx4dePV5I", 
-                    "https://www.youtube.com/watch?v=ecTQx5JNZBA", "https://www.youtube.com/watch?v=NiTwT05VgPA", 
-                    "https://www.youtube.com/watch?v=nZpOGr1C8es", "https://www.youtube.com/watch?v=M1MFK5rWUpU", 
-                    "https://www.youtube.com/watch?v=xpSJnLMCRxc", "https://www.youtube.com/watch?v=6hhhleiuaJA", 
-                    "https://www.youtube.com/watch?v=jKY7pm7xlLk", "https://www.youtube.com/watch?v=C36Y5fmPnrQ", 
-                    "https://www.youtube.com/watch?v=cpfFpC5xrrY", "https://www.youtube.com/watch?v=TlkHKmjha3U", 
-                    "https://www.youtube.com/watch?v=M1MFK5rWUpU", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
-                    "https://www.youtube.com/watch?v=z7WJw6SY0m0", "https://www.youtube.com/watch?v=ecTQx5JNZBA", 
-                    "https://www.youtube.com/watch?v=2r0Wh1uEiuE", "https://www.youtube.com/watch?v=R6VH1qB-Hlg", 
-                    "https://www.youtube.com/watch?v=HSUgcYisbmw", "https://www.youtube.com/watch?v=fi-QYKZP1d0", 
-                    "https://www.youtube.com/watch?v=uIcpEprBKUA", "https://www.youtube.com/watch?v=LDJAuOW-_-4", 
-                    "https://www.youtube.com/watch?v=r8clc_Vwahs", "https://www.youtube.com/watch?v=z7WJw6SY0m0", 
-                    "https://www.youtube.com/watch?v=jn__gJ-7-vE", "https://www.youtube.com/watch?v=61yiWvXwB74", 
-                    "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
-                    ],
+                'urls': ["https://www.youtube.com/watch?v=Sv2mIvMwrSY", "https://www.youtube.com/watch?v=R1CZTJ8hW0s"],
+                'company_name': "고객사 명",
                 'immediate': False
             }
         ),
@@ -78,6 +67,7 @@ class YouTubeSongViewCountAPIView(APIView):
     )
     def post(self, request):
         urls = request.data.get('urls', [])
+        company_name = request.data.get('company_name', 'default')
         immediate = request.data.get('immediate', False)
 
         if not urls:
@@ -90,17 +80,17 @@ class YouTubeSongViewCountAPIView(APIView):
             if immediate:
                 # 즉시 실행
                 results = YouTubeSongCrawler(urls)
+                save_each_to_csv(results, company_name)
                 return Response({
                     'message': '크롤링이 즉시 실행되었습니다.',
                     'results': results
                 }, status=status.HTTP_200_OK)
             else:
                 # Celery task로 예약
-                task = YouTubeSongCrawlingTask.delay(urls)
+                youtube_crawl_task.delay(urls, company_name)
                 return Response({
                     'message': '크롤링 작업이 성공적으로 예약되었습니다.',
                     'task_info': {
-                        'task_id': task.id,
                         'song_count': len(urls)
                     }
                 }, status=status.HTTP_202_ACCEPTED)
