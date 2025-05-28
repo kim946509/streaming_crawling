@@ -21,9 +21,14 @@ def YouTubeSongCrawlingSchedule():
         current_time = datetime.now(kst)
         logger.info(f"현재 서버 시간: {current_time}")
 
+        """
+        =====================================
+        '*' <- 이거는 매일을 의미!
+        ⬇ 여기서 시간, 날짜, 월 등등 수정하면 돼유 ⬇
+        =====================================
+        """
         schedule, created = CrontabSchedule.objects.get_or_create(
             minute='0',
-            # === ⬇️ 이거 수정하면 돼유 ===
             hour='8',  # UTC 8시 = KST 17시
             day_of_week='*', # 매일 -> 0 ~ 6 (일 ~ 토). 예) '0'은 일요일, '1'은 월요일
             day_of_month='*', # 매일 -> 1 ~ 31. 예) '1'은 1일, '31'은 31일
