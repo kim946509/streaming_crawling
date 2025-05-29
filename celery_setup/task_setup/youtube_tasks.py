@@ -1,5 +1,5 @@
 from celery import shared_task
-from streaming_site_list.youtube.views.crawler import YouTubeSongCrawler, save_each_to_csv
+from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv
 import logging
 
 logger = logging.getLogger(__name__)

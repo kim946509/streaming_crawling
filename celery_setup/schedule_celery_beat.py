@@ -46,7 +46,7 @@ def YouTubeSongCrawlingSchedule():
             name=task_name,
             defaults={
                 'crontab': schedule,
-                'task': 'streaming_site_list.youtube.celery_setup.tasks.YouTubeSongCrawlingTask',
+                'task': 'celery_setup.task_setup.youtube_tasks.YouTubeSongCrawlingTask',
                 'enabled': True,
             }
         )
