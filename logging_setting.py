@@ -1,5 +1,5 @@
 import logging
-from streaming_site_list.youtube.views.crawler import SongViewCountCrawl
+from crawling_view.youtube_crawler_view import YouTubeSongCrawler
 
 # 로깅 기본 설정
 logging.basicConfig(
@@ -10,4 +10,4 @@ logging.basicConfig(
 
 if __name__ == "__main__":
     logging.info("크롤링 시작")
-    SongViewCountCrawl.delay()
+    YouTubeSongCrawler.delay()
