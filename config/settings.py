@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     # 앱 추가
     'streaming_site_list.youtube', # 유튜브에서 노래 조회수 크롤링
+    'streaming_site_list.youtube_music', # 유튜브 뮤직에서 노래 조회수 크롤링
 
     # Framework
     'rest_framework', # DRF
