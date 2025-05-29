@@ -1,5 +1,5 @@
 import logging
-from crawling_view.youtube_crawler_view import YouTubeSongCrawler
+from crawling_view.youtube_crawler_views import YouTubeSongCrawler
 
 # 로깅 기본 설정
 logging.basicConfig(
