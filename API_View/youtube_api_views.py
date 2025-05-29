@@ -5,8 +5,8 @@ from streaming_site_list.youtube.models import YouTubeSongViewCount
 from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongViewCountSerializer
 
 # ---------- ⬇️ crawler 함수 호출 ----------
-from streaming_site_list.youtube.crawling_view.crawler import YouTubeSongCrawler, save_each_to_csv
-from celery_setup.tasks import (
+from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv
+from celery_setup.task_setup.youtube_tasks import (
     youtube_crawl_rhoonart,
 
 )
@@ -60,7 +60,7 @@ class YouTubeSongViewCountAPIView(APIView):
     def post(self, request):
         urls = request.data.get('urls', [])
         company_name = request.data.get('company_name', 'default')
-        service_name = request.data.get('service_name', 'default')
+        service_name = request.data.get('service_name', 'youtube')
         immediate = request.data.get('immediate', False)
 
         if not urls:
