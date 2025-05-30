@@ -1,13 +1,24 @@
 from celery import shared_task
 from crawling_view.youtube_music_crawler_views import SearchSong, YouTubeMusicSongCrawler, save_each_to_csv
 from user_id_and_password import youtube_music_id, youtube_music_password
+import logging
+
+logger = logging.getLogger(__name__)
 
 @shared_task
-def youtube_music_crawl_jaerium():
+def youtube_music_crawl_jaerium_test():
     search_song = SearchSong(youtube_music_id, youtube_music_password)
+    company_name = "rhoonart"
     artist_name = "Jaerium"
     song_names = ["Cheers to the Future", "Softness in the Snow", "The Frost of Dreams"]
 
     artist_song_list = [(artist_name, song) for song in song_names]
-    results = search_song.search_multiple(artist_song_list)
-    save_each_to_csv(results, "rhoonart")
+    search_results = search_song.search_multiple(artist_song_list)
+
+    html_list = [item['html'] for item in search_results]
+    result_list = YouTubeMusicSongCrawler.extract_song_info_list(html_list, artist_song_list)
+    logger.info(f"YouTubeMusicSongCrawler result: {result_list}")
+
+    filepaths = save_each_to_csv({info['song_name']: info for info in result_list}, company_name, 'youtube_music')
+    logger.info(f"저장된 파일 경로: {filepaths}")
+    return result_list
