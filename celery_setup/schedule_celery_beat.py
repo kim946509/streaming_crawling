@@ -29,13 +29,13 @@ def YouTubeSongCrawlingSchedule():
         """
         schedule, created = CrontabSchedule.objects.get_or_create(
             minute='0',
-            hour='8',  # UTC 8시 = KST 17시
+            hour='17', # 한국 시간
             day_of_week='*', # 매일 -> 0 ~ 6 (일 ~ 토). 예) '0'은 일요일, '1'은 월요일
             day_of_month='*', # 매일 -> 1 ~ 31. 예) '1'은 1일, '31'은 31일
             month_of_year='*', # 매월 -> 1 ~ 12. 예) '1'은 1월, '12'은 12월
             timezone=pytz.timezone('Asia/Seoul')
         )
-        
+    
         if created:
             logger.info("새로운 Crontab 스케줄이 생성되었습니다. (KST 17:00 실행)")
         else:
