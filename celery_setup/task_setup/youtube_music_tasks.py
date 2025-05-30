@@ -36,12 +36,12 @@ def youtube_music_crawl_jaerium_test():
     logger.info(f"저장된 파일 경로: {filepaths}")
     return result_list
 
-# ------------------------------ Anonatsue ------------------------------
+# ------------------------------ anonatsue ------------------------------
 @shared_task
 def youtube_music_crawl_anonatsue_test():
     search_song = SearchSong(youtube_music_id, youtube_music_password)
     company_name = "rhoonart"
-    artist_name = "Anonatsue"
+    artist_name = "anonatsue"
     song_names = [
         "Dreamy Orchards",
         "Emerald Symphony",
