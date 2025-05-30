@@ -31,7 +31,7 @@ def test_jaerium():
 
 def test_anonatsue():
     search_song = SearchSong(youtube_music_id, youtube_music_password)
-    artist_name = "Anonatsue"
+    artist_name = "anonatsue"
     company_name = "rhoonart"
     song_names = [
         "Dreamy Orchards",
