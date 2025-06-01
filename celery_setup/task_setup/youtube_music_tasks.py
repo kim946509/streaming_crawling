@@ -1,5 +1,5 @@
 from celery import shared_task
-from crawling_view.youtube_music_crawler_views import SearchSong, YouTubeMusicSongCrawler, save_each_to_csv
+from crawling_view.youtube_music_crawler_views import YouTubeMusicSearchSong, YouTubeMusicSongCrawler, save_each_to_csv
 from user_id_and_password import youtube_music_id, youtube_music_password
 import logging
 
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------ Jaerium ------------------------------
 @shared_task
 def youtube_music_crawl_jaerium_test():
-    search_song = SearchSong(youtube_music_id, youtube_music_password)
+    search_song = YouTubeMusicSearchSong(youtube_music_id, youtube_music_password)
     company_name = "rhoonart"
     artist_name = "Jaerium"
     song_names = [
@@ -39,7 +39,7 @@ def youtube_music_crawl_jaerium_test():
 # ------------------------------ anonatsue ------------------------------
 @shared_task
 def youtube_music_crawl_anonatsue_test():
-    search_song = SearchSong(youtube_music_id, youtube_music_password)
+    search_song = YouTubeMusicSearchSong(youtube_music_id, youtube_music_password)
     company_name = "rhoonart"
     artist_name = "anonatsue"
     song_names = [
