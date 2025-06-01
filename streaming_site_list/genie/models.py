@@ -4,7 +4,8 @@ class GenieSongViewCount(models.Model):
     song_id = models.CharField(max_length=255, unique=True)
     artist_name = models.CharField(max_length=255)
     song_name = models.CharField(max_length=255)
-    view_count = models.BigIntegerField(default=0)
+    total_person_count = models.BigIntegerField(default=0)
+    total_play_count = models.BigIntegerField(default=0)
     extracted_date = models.DateField()
 
     def __str__(self):
