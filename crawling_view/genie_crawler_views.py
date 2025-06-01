@@ -34,7 +34,8 @@ def save_to_db(results):
         GenieSongViewCount.objects.create(
             song_name=data.get('song_name'),
             artist_name=data.get('artist_name'),
-            view_count=data.get('view_count'),
+            total_person_count=data.get('total_person_count'),
+            total_play_count=data.get('total_play_count'),
             extracted_date=data.get('extracted_date')
         )
             
@@ -49,14 +50,21 @@ def save_each_to_csv(results, company_name, service_name):
     for song_name, data in results.items():
         CSV_DIR = Path('csv_folder/') / company_name / service_name
 
-        if data.get('view_count') is not None:
+        if data.get('total_person_count') is not None:
             try:
-                data['view_count'] = int(data['view_count'])
+                data['total_person_count'] = int(data['total_person_count'])
             except (ValueError, TypeError):
-                data['view_count'] = None
-                logger.error(f"❌ 조회수 변환 실패: {data['view_count']}")
+                data['total_person_count'] = None
+                logger.error(f"❌ 조회수 변환 실패: {data['total_person_count']}")
 
         song_name = data.get('song_name', 'unknown')
+
+        if data.get('total_play_count') is not None:
+            try:
+                data['total_play_count'] = int(data['total_play_count'])
+            except (ValueError, TypeError):
+                data['total_play_count'] = None
+                logger.error(f"❌ 조회수 변환 실패: {data['total_play_count']}")
 
         # ------------------------------ 파일명에 사용할 수 없는 문자 제거 및 공백을 언더바로 변환 ------------------------------
         song_name_clean = re.sub(r'[\\/:*?"<>|]', '', song_name)
@@ -69,7 +77,7 @@ def save_each_to_csv(results, company_name, service_name):
         filepath = CSV_DIR / filename # 파일 저장 경로
 
         # ------------------------------ DataFrame 생성 (컬럼 순서 커스텀 가능) ------------------------------
-        columns = ['song_name', 'artist_name', 'view_count', 'extracted_date']
+        columns = ['song_name', 'artist_name', 'total_person_count', 'total_play_count', 'extracted_date']
         new_df = pd.DataFrame([{col: data.get(col) for col in columns}])
 
         # ------------------------------ 기존 파일이 있으면 읽어서 누적, 없으면 새로 생성 ------------------------------
@@ -84,6 +92,7 @@ def save_each_to_csv(results, company_name, service_name):
             combined_df = new_df
 
         # ------------------------------ 저장 ------------------------------
+        combined_df = combined_df.sort_values(by="extracted_date", ascending=False)
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
         filepaths[song_name] = str(filepath)
@@ -155,7 +164,7 @@ class GenieSearchSong:
                             search_input.send_keys(query)
                             time.sleep(random.uniform(0.7, 1.5))
                             search_input.send_keys(u'\ue007')  # 엔터키 전송
-                            time.sleep(random.uniform(0.7, 1.5))  # 검색 결과 로딩 대기
+                            time.sleep(3)
 
                             # ---------------------- 검색 결과 로딩 대기 후, 곡 정보 버튼 클릭 ----------------------
                             try:
@@ -166,6 +175,8 @@ class GenieSearchSong:
                                 song_info_button.click()
                                 logger.info("✅ 곡 정보 페이지 버튼 클릭 완료")
                                 time.sleep(random.uniform(1.0, 2.0))  # 페이지 이동 대기
+                                # 곡 정보 페이지의 html 반환
+                                return driver.page_source
                             except Exception as e:
                                 logger.error(f"❌ 곡 정보 버튼 클릭 실패: {e}")
                                 return None
@@ -203,6 +214,9 @@ class GenieSongCrawler:
         results = []
         max_attempts = 6
         for html, (target_artist, target_song) in zip(html_list, artist_song_list):
+            if html is None:
+                logger.error(f"❌ HTML이 None입니다: {target_artist} - {target_song}")
+                continue
             for attempt in range(max_attempts):
                 try:
                     logger.info(f"[시도 {attempt+1}/5] '{target_artist} - {target_song}' 정보 추출 시도 중...")
