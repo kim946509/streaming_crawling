@@ -151,7 +151,7 @@ def convert_view_count(view_count_text):
         return None
 
 '''===================== ⬇️ 유튜브 뮤직 로그인, 검색 함수 ====================='''
-class SearchSong:
+class YouTubeMusicSearchSong:
     def __init__(self, youtube_music_id, youtube_music_password):
         self.youtube_music_id = youtube_music_id
         self.youtube_music_password = youtube_music_password
