@@ -35,6 +35,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/streaming/', include('streaming_site_list.youtube.urls')),
     path('api/v1/streaming/', include('streaming_site_list.youtube_music.urls')),
+    path('api/v1/streaming/', include('streaming_site_list.genie.urls')),
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
