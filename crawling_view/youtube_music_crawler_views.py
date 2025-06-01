@@ -324,7 +324,7 @@ class YouTubeMusicSearchSong:
             logger.error(f"❌ SearchSong.search() 에러: {e}", exc_info=True)
             return None
 
-
+    '''===================== ⬇️ 유튜브 뮤직 노래 검색 함수 (여러 곡) ====================='''
     def search_multiple(self, artist_song_list):
         results = []
         for artist, song in artist_song_list:
@@ -336,6 +336,7 @@ class YouTubeMusicSearchSong:
             })
         return results
 
+'''===================== ⬇️ 유튜브 뮤직 노래 크롤링 함수 ====================='''
 class YouTubeMusicSongCrawler():
     @staticmethod
     def extract_song_info_list(html_list, artist_song_list):
@@ -376,6 +377,7 @@ class YouTubeMusicSongCrawler():
                             if song_name and artist_name and song_name.replace(' ', '').lower() == target_song.replace(' ', '').lower() and target_artist.replace(' ', '').lower() in artist_name.replace(' ', '').lower():
                                 logger.info(f"[성공] '{target_artist} - {target_song}' → 곡명: {song_name}, 아티스트: {artist_name}, 조회수: {view_count}, 추출일: {datetime.now().strftime('%Y.%m.%d')}")
                                 results.append({
+                                    'service_name': 'youtube_music',
                                     'song_name': song_name,
                                     'artist_name': artist_name,
                                     'view_count': view_count,
