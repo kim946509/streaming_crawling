@@ -9,4 +9,4 @@ class YouTubeSongViewCount(models.Model):
     upload_date = models.DateField()
 
     def __str__(self):
-        return f"{self.song_id} - {self.view_count}"
+        return f"{self.artist_name} - {self.song_name}"
