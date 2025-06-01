@@ -89,7 +89,7 @@ class YouTubeMusicSongViewCountAPIView(APIView):
         song_name = request.query_params.get('song_name')
         if not song_id and not song_name:
             # 전체 리스트 반환
-            songs = YouTubeMusicSongViewCount.objects.all()
+            songs = YouTubeMusicSongViewCount.objects.all().order_by('-extracted_date')
             serializer = YouTubeMusicSongViewCountSerializer(songs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         try:
@@ -137,7 +137,7 @@ class YouTubeMusicSongViewCountAPIView(APIView):
             if song_id:
                 song = YouTubeMusicSongViewCount.objects.get(song_id=song_id)
             else:
-                song = YouTubeMusicSongViewCount.objects.filter(song_name=song_name).first()
+                song = YouTubeMusicSongViewCount.objects.filter(song_name=song_name).order_by('-extracted_date').first()
                 if not song:
                     raise YouTubeMusicSongViewCount.DoesNotExist
         except YouTubeMusicSongViewCount.DoesNotExist:
