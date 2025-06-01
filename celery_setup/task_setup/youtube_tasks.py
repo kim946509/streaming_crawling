@@ -1,9 +1,10 @@
 from celery import shared_task
-from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv
+from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv, save_to_db
 import logging
 
 logger = logging.getLogger(__name__)
 
+# ------------------------------ rhoonart ------------------------------
 @shared_task
 def youtube_crawl_rhoonart():
     urls = [
@@ -35,5 +36,14 @@ def youtube_crawl_rhoonart():
         "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
     ]
     results = YouTubeSongCrawler(urls)
-    save_each_to_csv(results, "rhoonart")
+    try:
+        filepaths = save_each_to_csv(results, "rhoonart")
+        logger.info(f"✅ CSV 파일 저장 완료: {filepaths}")
+    except Exception as e:
+        logger.error(f"❌ CSV 파일 저장 실패: {e}")
+    try:
+        save_to_db(results)
+        logger.info("✅ DB 저장 완료: rhoonart 유튜브 곡들")
+    except Exception as e:
+        logger.error(f"❌ DB 저장 실패: {e}")
 
