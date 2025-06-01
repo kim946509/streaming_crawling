@@ -89,12 +89,12 @@ class GenieSongViewCountAPIView(APIView):
         song_name = request.query_params.get('song_name')
         if not song_id and not song_name:
             # 전체 리스트 반환
-            songs = GenieSongViewCount.objects.all()
+            songs = GenieSongViewCount.objects.all().order_by('-extracted_date')
             serializer = GenieSongViewCountSerializer(songs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         try:
             if song_id:
-                song = GenieSongViewCount.objects.get(song_id=song_id)
+                song = GenieSongViewCount.objects.get(song_id=song_id).order_by('-extracted_date')
             else:
                 song = GenieSongViewCount.objects.filter(song_name=song_name).first()
                 if not song:
