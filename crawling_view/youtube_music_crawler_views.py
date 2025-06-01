@@ -161,32 +161,62 @@ class SearchSong:
 
                 # ------------------------------ 로그인 ------------------------------
                 # 이메일 입력 필드가 나타날 때까지 대기
-                email_input = wait.until(EC.presence_of_element_located((By.ID, "identifierId")))
-                time.sleep(random.uniform(0.7, 1.5))
-                email_input.send_keys(self.youtube_music_id)
-                time.sleep(random.uniform(0.7, 1.5))
+                try:
+                    email_input = wait.until(EC.presence_of_element_located((By.ID, "identifierId")))
+                    time.sleep(random.uniform(0.7, 1.5))
+                    email_input.send_keys(self.youtube_music_id)
+                    time.sleep(random.uniform(0.7, 1.5))
+                except Exception as e:
+                    logger.error(f"❌ 이메일 입력 단계에서 실패: {e}")
+                    return None
 
                 # '다음' 버튼이 클릭 가능할 때까지 대기 후 클릭
-                next_button = wait.until(EC.element_to_be_clickable((By.ID, "identifierNext")))
-                time.sleep(random.uniform(0.7, 1.5))
-                next_button.click()
-                time.sleep(random.uniform(0.7, 1.5))
+                try:
+                    next_button = wait.until(EC.element_to_be_clickable((By.ID, "identifierNext")))
+                    time.sleep(random.uniform(0.7, 1.5))
+                    next_button.click()
+                    time.sleep(random.uniform(0.7, 1.5))
+                except Exception as e:
+                    logger.error(f"❌ '다음' 버튼 클릭 단계에서 실패: {e}")
+                    return None
 
                 # 비밀번호 입력 필드가 나타날 때까지 대기
-                password_input = wait.until(EC.presence_of_element_located((By.NAME, "Passwd")))
-                time.sleep(random.uniform(0.7, 1.5))
-                password_input.send_keys(self.youtube_music_password)
-                time.sleep(random.uniform(0.7, 1.5))
+                try:
+                    password_input = wait.until(EC.presence_of_element_located((By.NAME, "Passwd")))
+                    time.sleep(random.uniform(0.7, 1.5))
+                    password_input.send_keys(self.youtube_music_password)
+                    time.sleep(random.uniform(0.7, 1.5))
+                except Exception as e:
+                    logger.error(f"❌ 비밀번호 입력 단계에서 실패: {e}")
+                    return None
 
                 # 로그인 버튼 클릭
-                login_button = wait.until(EC.element_to_be_clickable((By.ID, "passwordNext")))
-                time.sleep(random.uniform(0.7, 1.5))
-                login_button.click()
-                time.sleep(random.uniform(0.7, 1.5))
+                try:
+                    login_button = wait.until(EC.element_to_be_clickable((By.ID, "passwordNext")))
+                    time.sleep(random.uniform(0.7, 1.5))
+                    login_button.click()
+                    time.sleep(random.uniform(0.7, 1.5))
+                except Exception as e:
+                    logger.error(f"❌ 로그인 버튼 클릭 단계에서 실패: {e}")
+                    return None
+
+                # 본인 인증(추가 인증) 화면 감지
+                try:
+                    # 예시: 본인 인증 화면에 나타나는 특정 요소 감지 (예: '다음', '확인', '보안', '코드' 등 텍스트 포함)
+                    time.sleep(2)
+                    page_source = driver.page_source
+                    if any(keyword in page_source for keyword in ["보안", "코드", "인증", "확인", "전화", "기기", "추가 확인"]):
+                        logger.warning("⚠️ 본인 인증(추가 인증) 화면이 감지되었습니다. 자동화가 중단될 수 있습니다.")
+                except Exception as e:
+                    logger.warning(f"본인 인증 감지 중 예외 발생: {e}")
 
                 # 로그인 버튼이 안 보일 때까지 대기 (로그인 성공)
-                wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label="로그인"]')))
-                time.sleep(2)
+                try:
+                    wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label="로그인"]')))
+                    time.sleep(2)
+                except Exception as e:
+                    logger.error(f"❌ 로그인 완료 대기 중 실패: {e}")
+                    return None
                 
                 # ------------------------------ 유튜브 뮤직 페이지 진입 ------------------------------
                 driver.get("https://music.youtube.com/")
@@ -197,7 +227,7 @@ class SearchSong:
                     try:
                         # 여러 검색 버튼 셀렉터 시도
                         search_button_selectors = [
-                            'button#button[aria-label="검색 시작"]',
+                            'button#button[aria-label="검색 시작"]', 
                             'button[aria-label="검색"]',
                         ]
                         search_button = None
