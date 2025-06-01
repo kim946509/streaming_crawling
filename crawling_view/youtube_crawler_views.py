@@ -31,12 +31,15 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
 def save_to_db(results):
 
     for song_id, data in results.items():
-        YouTubeSongViewCount.objects.create(
+        YouTubeSongViewCount.objects.update_or_create(
+            song_id=data.get('song_id'),
             song_name=data.get('song_name', 'unknown'),
-            view_count=data.get('view_count'),
-            youtube_url=data.get('youtube_url'),
-            upload_date=data.get('upload_date'),
-            extracted_date=data.get('extracted_date')
+            defaults={
+                'view_count': data.get('view_count'),
+                'youtube_url': data.get('youtube_url'),
+                'upload_date': data.get('upload_date'),
+                'extracted_date': data.get('extracted_date')
+            }
         )
 
     

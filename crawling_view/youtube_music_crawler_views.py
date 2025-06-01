@@ -31,11 +31,14 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
 '''===================== ⬇️ DB 저장 함수 ====================='''
 def save_to_db(results):
     for song_name, data in results.items():
-        YouTubeMusicSongViewCount.objects.create(
+        YouTubeMusicSongViewCount.objects.update_or_create(
+            song_id=data.get('song_id'),
             song_name=data.get('song_name'),
-            artist_name=data.get('artist_name'),
-            view_count=data.get('view_count'),
-            extracted_date=data.get('extracted_date')
+            defaults={
+                'artist_name': data.get('artist_name'),
+                'view_count': data.get('view_count'),
+                'extracted_date': data.get('extracted_date')
+            }
         )
     
 

@@ -31,12 +31,14 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
 '''===================== ⬇️ DB 저장 함수 ====================='''
 def save_to_db(results):
     for song_name, data in results.items():
-        GenieSongViewCount.objects.create(
-            song_name=data.get('song_name'),
+        GenieSongViewCount.objects.update_or_create(
+            song_id=data.get('song_id'),
             artist_name=data.get('artist_name'),
-            total_person_count=data.get('total_person_count'),
-            total_play_count=data.get('total_play_count'),
-            extracted_date=data.get('extracted_date')
+            defaults={
+                'total_person_count': data.get('total_person_count'),
+                'total_play_count': data.get('total_play_count'),
+                'extracted_date': data.get('extracted_date')
+            }
         )
             
 
