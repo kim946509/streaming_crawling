@@ -1,22 +1,18 @@
 # ---------- ⬇️ 모델 호출 ----------
 from streaming_site_list.youtube_music.models import YouTubeMusicSongViewCount
-
 # ---------- ⬇️ Serializer 호출 ----------
 from streaming_site_list.youtube_music.youtube_music_serializers import YouTubeMusicSongViewCountSerializer
-
 # ---------- ⬇️ crawler 함수 호출 ----------
 from crawling_view.youtube_crawler_views import save_each_to_csv
 from crawling_view.youtube_music_crawler_views import YouTubeMusicSongCrawler, save_to_db
-
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
 # ---------- ⬇️ DRF 패키지 호출 ----------
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-import logging, time
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -119,12 +115,17 @@ class YouTubeMusicSongViewCountAPIView(APIView):
                 'song_name': openapi.Schema(type=openapi.TYPE_STRING, description="곡의 song_name (선택)"),
                 'artist_name': openapi.Schema(type=openapi.TYPE_STRING, description="아티스트명 (수정시)"),
                 'view_count': openapi.Schema(type=openapi.TYPE_INTEGER, description="조회수 (수정시)"),
-                'youtube_music_url': openapi.Schema(type=openapi.TYPE_STRING, description="유튜브 뮤직 URL (수정시)"),
                 'extracted_date': openapi.Schema(type=openapi.TYPE_STRING, description="추출일 (YYYY-MM-DD, 수정시)"),
-                'upload_date': openapi.Schema(type=openapi.TYPE_STRING, description="업로드일 (YYYY-MM-DD, 수정시)")
             },
             required=[],
-            description="song_id 또는 song_name 중 하나는 반드시 필요합니다."
+            description="song_id 또는 song_name 중 하나는 반드시 필요합니다.",
+            example={
+                'song_id': '1234567890',
+                'song_name': 'song name',
+                'artist_name': 'artist name',
+                'view_count': 1000000,
+                'extracted_date': '2025-01-01',
+            }
         )
     )
     def put(self, request):
@@ -158,7 +159,11 @@ class YouTubeMusicSongViewCountAPIView(APIView):
                 'song_name': openapi.Schema(type=openapi.TYPE_STRING, description="곡의 song_name (선택)")
             },
             required=[],
-            description="song_id 또는 song_name 중 하나는 반드시 필요합니다."
+            description="song_id 또는 song_name 중 하나는 반드시 필요합니다.",
+            example={
+                'song_id': '1234567890',
+                'song_name': 'song name'
+            }
         )
     )
     def delete(self, request):
