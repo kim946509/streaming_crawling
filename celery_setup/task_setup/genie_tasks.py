@@ -7,14 +7,11 @@ logger = logging.getLogger(__name__)
 # ------------------------------ rhoonart ------------------------------
 class rhoonart_songs:
     jaerium = [
-        "Cheers to the Future",
-        "Softness in the Snow",
-        "The Frost of Dreams",
         "Beneath the Frozen Sky",
         "The Wisp of Winter",
         "Sparkles of the Night",
         "Soft Breezes in Winter",
-        "The New Year's Moment",
+        "The New Year’s Moment",
         "Cheers to the Future",
         "Softness in the Snow",
         "The Frost of Dreams"
@@ -32,7 +29,7 @@ class rhoonart_songs:
         "Cherry Blossom Serenade",
         "Soft Petal Waltz",
         "Garden of Serenity",
-        "Wind's Caress",
+        "Wind’s Caress",
         "Secret Garden Lullaby",
         "Azure Morning",
         "Lush Green Fields",
