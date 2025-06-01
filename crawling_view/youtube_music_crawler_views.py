@@ -84,6 +84,7 @@ def save_each_to_csv(results, company_name, service_name):
             combined_df = new_df
 
         # ------------------------------ 저장 ------------------------------
+        combined_df = combined_df.sort_values(by="extracted_date", ascending=False)
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
         filepaths[song_name] = str(filepath)
@@ -219,6 +220,7 @@ class YouTubeMusicSearchSong:
                     page_source = driver.page_source
                     if any(keyword in page_source for keyword in ["보안", "코드", "인증", "확인", "전화", "기기", "추가 확인"]):
                         logger.warning("⚠️ 본인 인증(추가 인증) 화면이 감지되었습니다. 자동화가 중단될 수 있습니다.")
+                        time.sleep(120) # 본인 인증이 뜨면 2분 대기
                 except Exception as e:
                     logger.warning(f"본인 인증 감지 중 예외 발생: {e}")
 
