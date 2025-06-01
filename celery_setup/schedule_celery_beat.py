@@ -10,9 +10,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-def YouTubeSongCrawlingSchedule():
+def SongCrawlingSchedule():
     """
-    유튜브 조회수 크롤링 스케줄을 생성하는 함수
     매일 한국 시간 오후 5시(17:00 KST)에 실행되도록 설정
     """
     try:
@@ -67,4 +66,4 @@ def YouTubeSongCrawlingSchedule():
         return False
 
 if __name__ == "__main__":
-    YouTubeSongCrawlingSchedule()
+    SongCrawlingSchedule()
