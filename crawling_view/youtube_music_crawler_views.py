@@ -1,3 +1,4 @@
+from streaming_site_list.youtube_music.models import YouTubeMusic
 # ---------- selenium에서 import한 목록 ----------
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -25,8 +26,19 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
     dir_path = Path(base_dir) / company_name / service_name
     dir_path.mkdir(parents=True, exist_ok=True)
     logger.info(f"✅ {company_name} 하위에 {service_name} 폴더 생성 완료")
+
+
+'''===================== ⬇️ DB 저장 함수 ====================='''
+def save_to_db(results):
+    for song_name, data in results.items():
+        YouTubeMusic.objects.create(
+            song_name=data.get('song_name'),
+            artist_name=data.get('artist_name'),
+            view_count=data.get('view_count'),
+            extracted_date=data.get('extracted_date')
+        )
     
-    
+
 '''===================== ⬇️ CSV 파일 저장 함수 ====================='''
 def save_each_to_csv(results, company_name, service_name):
     """
