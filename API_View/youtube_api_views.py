@@ -109,3 +109,72 @@ class YouTubeSongViewCountAPIView(APIView):
         queryset = YouTubeSongViewCount.objects.all().order_by('-extracted_date') # 크롤링 한 날짜의 최신순으로 정렬
         serializer = YouTubeSongViewCountSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    '''===================== ⬇️ 유튜브 노래 조회수 정보 수정 API ====================='''
+    @swagger_auto_schema(
+        operation_summary="유튜브 노래 조회수 정보 수정",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description="수정할 객체의 ID"),
+                'video_id': openapi.Schema(type=openapi.TYPE_STRING, description="수정할 객체의 video_id"),
+                'view_count': openapi.Schema(type=openapi.TYPE_INTEGER, description="수정할 조회수 값"),
+                'extracted_date': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="수정할 추출 날짜 (YYYY-MM-DD)")
+            },
+            required=[],
+            example={
+                'video_id': 'Sv2mIvMwrSY',
+                'view_count': 123456,
+                'extracted_date': '2024-06-01'
+            }
+        ),
+    )
+    def put(self, request):
+        obj_id = request.data.get('id')
+        video_id = request.data.get('video_id')
+        if not obj_id and not video_id:
+            return Response({'error': 'id 또는 video_id 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if obj_id:
+                obj = YouTubeSongViewCount.objects.get(id=obj_id)
+            else:
+                obj = YouTubeSongViewCount.objects.get(video_id=video_id)
+        except YouTubeSongViewCount.DoesNotExist:
+            return Response({'error': '해당 id 또는 video_id의 객체가 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = YouTubeSongViewCountSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': '수정이 완료되었습니다.', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    '''===================== ⬇️ 유튜브 노래 조회수 정보 삭제 API ====================='''
+    @swagger_auto_schema(
+        operation_summary="유튜브 노래 조회수 정보 삭제",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description="삭제할 객체의 ID"),
+                'video_id': openapi.Schema(type=openapi.TYPE_STRING, description="삭제할 객체의 video_id")
+            },
+            required=[],
+            example={
+                'video_id': 'Sv2mIvMwrSY'
+            }
+        ),
+    )
+    def delete(self, request):
+        obj_id = request.data.get('id')
+        video_id = request.data.get('video_id')
+        if not obj_id and not video_id:
+            return Response({'error': 'id 또는 video_id 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if obj_id:
+                obj = YouTubeSongViewCount.objects.get(id=obj_id)
+            else:
+                obj = YouTubeSongViewCount.objects.get(video_id=video_id)
+            obj.delete()
+            return Response({'message': '삭제가 완료되었습니다.'}, status=status.HTTP_200_OK)
+        except YouTubeSongViewCount.DoesNotExist:
+            return Response({'error': '해당 id 또는 video_id의 객체가 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
