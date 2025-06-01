@@ -10,14 +10,11 @@ if __name__ == "__main__":
     # 아티스트별 곡 리스트 딕셔너리
     artist_songs_dict = {
         "제이리움": [
-            "Cheers to the Future",
-            "Softness in the Snow",
-            "The Frost of Dreams",
             "Beneath the Frozen Sky",
             "The Wisp of Winter",
             "Sparkles of the Night",
             "Soft Breezes in Winter",
-            "The New Year's Moment",
+            "The New Year’s Moment",
             "Cheers to the Future",
             "Softness in the Snow",
             "The Frost of Dreams"
@@ -35,7 +32,7 @@ if __name__ == "__main__":
             "Cherry Blossom Serenade",
             "Soft Petal Waltz",
             "Garden of Serenity",
-            "Wind's Caress",
+            "Wind’s Caress",
             "Secret Garden Lullaby",
             "Azure Morning",
             "Lush Green Fields",
