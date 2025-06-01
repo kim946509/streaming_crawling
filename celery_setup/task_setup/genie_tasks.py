@@ -17,7 +17,7 @@ class rhoonart_songs:
         "The New Year's Moment",
         "Cheers to the Future",
         "Softness in the Snow",
-        "The Frost of Dreams",
+        "The Frost of Dreams"
     ]
     anonatsue = [
         "Dreamy Orchards",
@@ -36,7 +36,7 @@ class rhoonart_songs:
         "Secret Garden Lullaby",
         "Azure Morning",
         "Lush Green Fields",
-        "Meadow Whispers",
+        "Meadow Whispers"
     ]
 
     @staticmethod
@@ -59,7 +59,7 @@ class rhoonart_songs:
 # ------------------------------ Jaerium ------------------------------
 @shared_task
 def genie_crawl_jaerium_test():
-    return rhoonart_songs.crawl_artist("jaerium", rhoonart_songs.jaerium)
+    return rhoonart_songs.crawl_artist("제이리움", rhoonart_songs.jaerium)
 
 # ------------------------------ anonatsue ------------------------------
 @shared_task
