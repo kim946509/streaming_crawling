@@ -2,7 +2,7 @@
 from streaming_site_list.youtube_music.models import YouTubeMusicSongViewCount
 
 # ---------- ⬇️ Serializer 호출 ----------
-from streaming_site_list.youtube_music.serializers.youtube_music_serializers import YouTubeMusicSongViewCountSerializer
+from streaming_site_list.youtube_music.youtube_music_serializers import YouTubeMusicSongViewCountSerializer
 
 # ---------- ⬇️ crawler 함수 호출 ----------
 from crawling_view.youtube_crawler_views import save_each_to_csv
