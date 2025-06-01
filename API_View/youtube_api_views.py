@@ -2,10 +2,10 @@
 from streaming_site_list.youtube.models import YouTubeSongViewCount
 
 # ---------- ⬇️ Serializer 호출 ----------
-from streaming_site_list.youtube.serializers.api_serializers import YouTubeSongViewCountSerializer
+from streaming_site_list.youtube.api_serializers import YouTubeSongViewCountSerializer
 
 # ---------- ⬇️ crawler 함수 호출 ----------
-from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv
+from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv, save_to_db
 from celery_setup.task_setup.youtube_tasks import (
     youtube_crawl_rhoonart,
 
@@ -74,6 +74,7 @@ class YouTubeSongViewCountAPIView(APIView):
                 # 즉시 실행
                 results = YouTubeSongCrawler(urls)
                 save_each_to_csv(results, company_name, service_name)
+                save_to_db(results)
                 return Response({
                     'message': '크롤링이 즉시 실행되었습니다.',
                     'results': results
