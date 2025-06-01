@@ -1,25 +1,21 @@
 # ---------- ⬇️ 모델 호출 ----------
 from streaming_site_list.youtube.models import YouTubeSongViewCount
-
 # ---------- ⬇️ Serializer 호출 ----------
 from streaming_site_list.youtube.api_serializers import YouTubeSongViewCountSerializer
-
 # ---------- ⬇️ crawler 함수 호출 ----------
 from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv, save_to_db
 from celery_setup.task_setup.youtube_tasks import (
     youtube_crawl_rhoonart,
-
 )
-
 # ---------- ⬇️ Swagger를 위하여 ----------
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
 # ---------- ⬇️ DRF 패키지 호출 ----------
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-import logging, time
+import logging
+
 
 logger = logging.getLogger(__name__)
 
