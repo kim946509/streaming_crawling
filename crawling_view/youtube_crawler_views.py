@@ -277,6 +277,7 @@ def YouTubeSongCrawler(urls):
 
                     # 결과 저장
                     results[song_id] = {
+                        'service_name': 'youtube',
                         'song_name': song_name,
                         'view_count': view_count,
                         'youtube_url': youtube_url,
@@ -293,6 +294,7 @@ def YouTubeSongCrawler(urls):
                 except Exception as e:
                     logger.error(f"❌ {song_name} 크롤링 실패: {e}", exc_info=True)
                     results[song_id] = {
+                        'service_name': 'youtube',
                         'song_name': None,
                         'view_count': None,
                         'youtube_url': url,
