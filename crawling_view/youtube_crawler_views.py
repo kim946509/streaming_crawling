@@ -85,7 +85,7 @@ def save_each_to_csv(results, company_name, service_name):
             combined_df = new_df
 
         # 저장
-        combined_df = combined_df.sort_values(by="extracted_date", ascending=False)
+        combined_df = combined_df.sort_values(by="view_count", ascending=False)
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
         filepaths[song_name] = str(filepath)
