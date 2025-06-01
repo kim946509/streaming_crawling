@@ -1,4 +1,4 @@
-from streaming_site_list.youtube_music.models import YouTubeMusic
+from streaming_site_list.youtube_music.models import YouTubeMusicSongViewCount
 # ---------- selenium에서 import한 목록 ----------
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -31,7 +31,7 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
 '''===================== ⬇️ DB 저장 함수 ====================='''
 def save_to_db(results):
     for song_name, data in results.items():
-        YouTubeMusic.objects.create(
+        YouTubeMusicSongViewCount.objects.create(
             song_name=data.get('song_name'),
             artist_name=data.get('artist_name'),
             view_count=data.get('view_count'),
