@@ -32,8 +32,8 @@ def make_service_dir(company_name, service_name, base_dir='csv_folder/'):
 def save_to_db(results):
     for song_name, data in results.items():
         GenieSongViewCount.objects.update_or_create(
-            song_id=data.get('song_id'),
             artist_name=data.get('artist_name'),
+            song_name=data.get('song_name'),
             defaults={
                 'total_person_count': data.get('total_person_count'),
                 'total_play_count': data.get('total_play_count'),
@@ -94,7 +94,7 @@ def save_each_to_csv(results, company_name, service_name):
             combined_df = new_df
 
         # ------------------------------ 저장 ------------------------------
-        combined_df = combined_df.sort_values(by="extracted_date", ascending=False)
+        combined_df = combined_df.sort_values(by="total_play_count", ascending=False)
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
         filepaths[song_name] = str(filepath)
@@ -264,14 +264,14 @@ class GenieSongCrawler:
                     logger.error(f"❌ GenieSongCrawler.crawl() 에러: {e}", exc_info=True)
                     continue
 
-                results.append({
-                    "service_name": "genie",
-                    "artist_name": artist_name,
-                    "song_name": song_name,
-                    "total_person_count": total_person_count,
-                    "total_play_count": total_play_count,
-                    "extracted_date": datetime.now().strftime('%Y-%m-%d')
-                })
+            results.append({
+                "service_name": "genie",
+                "artist_name": artist_name,
+                "song_name": song_name,
+                "total_person_count": total_person_count,
+                "total_play_count": total_play_count,
+                "extracted_date": datetime.now().strftime('%Y-%m-%d')
+            })
         return results
 
 
