@@ -176,7 +176,14 @@ class GenieSearchSong:
                                 )
                                 song_info_button.click()
                                 logger.info("✅ 곡 정보 페이지 버튼 클릭 완료")
-                                time.sleep(random.uniform(1.0, 2.0))  # 페이지 이동 대기
+
+                                # 곡 정보 페이지의 곡명(h2.name)이 나타날 때까지 wait
+                                try:
+                                    wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'h2.name')))
+                                    logger.info("✅ 곡 정보 페이지 로딩 완료")
+                                except Exception as e:
+                                    logger.warning(f"곡 정보 페이지 로딩 대기 실패: {e}")
+
                                 # 곡 정보 페이지의 html 반환
                                 return driver.page_source
                             except Exception as e:
@@ -209,6 +216,11 @@ class GenieSearchSong:
         return results
 
 
+'''===================== 곡명 정규화 함수 ====================='''
+def normalize_song_name(text):
+    return re.sub(r'[\W_]+', '', text).lower() if text else ''
+
+
 '''===================== ⬇️ 지니 노래 크롤링 함수 ====================='''
 class GenieSongCrawler:
     @staticmethod
@@ -232,8 +244,10 @@ class GenieSongCrawler:
                         logger.info(f"✅ song_name 추출 성공: {song_name}")
                     else:
                         logger.warning("❌ song_name 태그(h2.name) 추출 실패")
-                    if not song_name:
-                        song_name = target_song
+
+                    if not song_name or normalize_song_name(song_name) != normalize_song_name(target_song):
+                        logger.warning(f"❌ 검색 곡명과 파싱된 곡명이 다릅니다. 저장하지 않습니다. 검색 '{target_song}' → 파싱 '{song_name}'")
+                        continue  # 저장하지 않음
 
                     # artist_name 추출 (info-data의 첫 번째 li의 value)
                     artist_name = None
