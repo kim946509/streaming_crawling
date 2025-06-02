@@ -16,9 +16,23 @@ import logging, time, re
 import pandas as pd
 from pathlib import Path
 import random
+# ---------- 쿠키 저장 및 로드 모듈 ----------
+import pickle
 
 '''===================== logging 설정 ====================='''
 logger = logging.getLogger(__name__)
+
+
+'''===================== ⬇️ 쿠키 저장 및 로드 함수 ====================='''
+def save_cookies(driver, filepath):
+    with open(filepath, "wb") as file:
+        pickle.dump(driver.get_cookies(), file)
+
+def load_cookies(driver, filepath):
+    with open(filepath, "rb") as file:
+        cookies = pickle.load(file)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
 
 
 '''===================== ⬇️ 고객사 하위에 서비스별 폴더를 모두 생성 함수 ====================='''
@@ -96,7 +110,7 @@ def save_each_to_csv(results, company_name, service_name):
 
 '''===================== ⬇️ driver 설정 ====================='''
 @contextmanager
-def setup_driver():
+def setup_driver(cookie_path="cookies.pkl"):
     options = Options()
     # options.add_argument('--headless') # 브라우저 창 비활성화 : 주석처리하면 브라우저 활성화
     options.add_argument('--no-sandbox') # 샌드박스 비활성화 (보안 기능 해제)
@@ -105,7 +119,7 @@ def setup_driver():
     options.add_argument('--disable-blink-features=AutomationControlled') # 자동화 방지 기능 비활성화
     options.add_argument('--window-size=1920,1080')  # 브라우저 창 크기 고정으로 일관된 크롤링 환경 제공
     options.add_argument('--start-maximized')  # 브라우저 최대화
-    options.add_argument('--incognito')  # 시크릿 모드(캐시나 쿠키의 영향을 받지 않음)
+    # options.add_argument('--incognito')  # 시크릿 모드(캐시나 쿠키의 영향을 받지 않음)
     options.add_argument('--disable-extensions')  # 확장 프로그램 비활성화(성능 향상용)
     options.add_argument('--disable-popup-blocking')  # 팝업 차단 비활성화(필요한 경우 팝업 허용 <- 주석 처리하면 허용)
     options.add_argument('--disable-notifications')  # 알림 비활성화
@@ -117,12 +131,23 @@ def setup_driver():
     driver = webdriver.Chrome(service=service, options=options)
     logger.info("🟢 Chrome 브라우저 실행 완료")
 
+    # 쿠키 불러오기
+    if Path(cookie_path).exists():
+        driver.get("https://music.youtube.com/")  # 쿠키 적용 전 유튜브 뮤직 접속 필요
+        load_cookies(driver, cookie_path)
+        driver.refresh()
+
     try:
         yield driver
     except Exception as e:
         logger.error(f"❌ Chrome 브라우저 실행 실패: {e}", exc_info=True)
         raise
     finally:
+        # 쿠키 저장
+        try:
+            save_cookies(driver, cookie_path)
+        except Exception as e:
+            logger.error(f"❌ 쿠키 저장 실패: {e}")
         driver.quit()
         logger.info("🔴 Chrome 브라우저 종료")
 
@@ -167,77 +192,86 @@ class YouTubeMusicSearchSong:
                 driver.get("https://music.youtube.com/")
                 wait = WebDriverWait(driver, 10)
 
-                # ------------------------------ 로그인 버튼 클릭 ------------------------------
+                # 로그인 버튼이 보이면(=로그인 안 된 상태)만 로그인 로직 실행
+                need_login = False
                 try:
-                    login_a_tag = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[aria-label="로그인"]')))
-                    login_a_tag.click()
-                    time.sleep(2)
-                except Exception as e:
-                    logger.warning("❌로그인 버튼(a[aria-label='로그인']) 클릭 실패 또는 이미 로그인 페이지입니다.")
+                    login_btn = driver.find_element(By.CSS_SELECTOR, 'a[aria-label="로그인"]')
+                    if login_btn.is_displayed():
+                        need_login = True
+                except Exception:
+                    # 로그인 버튼이 없으면 이미 로그인된 상태
+                    need_login = False
 
-                # ------------------------------ 로그인 ------------------------------
-                # 이메일 입력 필드가 나타날 때까지 대기
-                try:
-                    email_input = wait.until(EC.presence_of_element_located((By.ID, "identifierId")))
-                    time.sleep(random.uniform(0.7, 1.5))
-                    email_input.send_keys(self.youtube_music_id)
-                    time.sleep(random.uniform(0.7, 1.5))
-                except Exception as e:
-                    logger.error(f"❌ 이메일 입력 단계에서 실패: {e}")
-                    return None
+                if need_login:
+                    # ------------------------------ 로그인 버튼 클릭 ------------------------------
+                    try:
+                        login_btn.click()
+                        time.sleep(2)
+                    except Exception as e:
+                        logger.warning("❌로그인 버튼(a[aria-label='로그인']) 클릭 실패 또는 이미 로그인 페이지입니다.")
 
-                # '다음' 버튼이 클릭 가능할 때까지 대기 후 클릭
-                try:
-                    next_button = wait.until(EC.element_to_be_clickable((By.ID, "identifierNext")))
-                    time.sleep(random.uniform(0.7, 1.5))
-                    next_button.click()
-                    time.sleep(random.uniform(0.7, 1.5))
-                except Exception as e:
-                    logger.error(f"❌ '다음' 버튼 클릭 단계에서 실패: {e}")
-                    return None
+                    # ------------------------------ 로그인 ------------------------------
+                    # 이메일 입력 필드가 나타날 때까지 대기
+                    try:
+                        email_input = wait.until(EC.presence_of_element_located((By.ID, "identifierId")))
+                        time.sleep(random.uniform(0.7, 1.5))
+                        email_input.send_keys(self.youtube_music_id)
+                        time.sleep(random.uniform(0.7, 1.5))
+                    except Exception as e:
+                        logger.error(f"❌ 이메일 입력 단계에서 실패: {e}")
+                        return None
 
-                # 비밀번호 입력 필드가 나타날 때까지 대기
-                try:
-                    password_input = wait.until(EC.presence_of_element_located((By.NAME, "Passwd")))
-                    time.sleep(random.uniform(0.7, 1.5))
-                    password_input.send_keys(self.youtube_music_password)
-                    time.sleep(random.uniform(0.7, 1.5))
-                except Exception as e:
-                    logger.error(f"❌ 비밀번호 입력 단계에서 실패: {e}")
-                    return None
+                    # '다음' 버튼이 클릭 가능할 때까지 대기 후 클릭
+                    try:
+                        next_button = wait.until(EC.element_to_be_clickable((By.ID, "identifierNext")))
+                        time.sleep(random.uniform(0.7, 1.5))
+                        next_button.click()
+                        time.sleep(random.uniform(0.7, 1.5))
+                    except Exception as e:
+                        logger.error(f"❌ '다음' 버튼 클릭 단계에서 실패: {e}")
+                        return None
 
-                # 로그인 버튼 클릭
-                try:
-                    login_button = wait.until(EC.element_to_be_clickable((By.ID, "passwordNext")))
-                    time.sleep(random.uniform(0.7, 1.5))
-                    login_button.click()
-                    time.sleep(random.uniform(0.7, 1.5))
-                except Exception as e:
-                    logger.error(f"❌ 로그인 버튼 클릭 단계에서 실패: {e}")
-                    return None
+                    # 비밀번호 입력 필드가 나타날 때까지 대기
+                    try:
+                        password_input = wait.until(EC.presence_of_element_located((By.NAME, "Passwd")))
+                        time.sleep(random.uniform(0.7, 1.5))
+                        password_input.send_keys(self.youtube_music_password)
+                        time.sleep(random.uniform(0.7, 1.5))
+                    except Exception as e:
+                        logger.error(f"❌ 비밀번호 입력 단계에서 실패: {e}")
+                        return None
 
-                # 본인 인증(추가 인증) 화면 감지
-                try:
-                    # 예시: 본인 인증 화면에 나타나는 특정 요소 감지 (예: '다음', '확인', '보안', '코드' 등 텍스트 포함)
-                    time.sleep(2)
-                    page_source = driver.page_source
-                    if any(keyword in page_source for keyword in ["보안", "코드", "인증", "확인", "전화", "기기", "추가 확인"]):
-                        logger.warning("⚠️ 본인 인증(추가 인증) 화면이 감지되었습니다. 자동화가 중단될 수 있습니다.")
-                        time.sleep(120) # 본인 인증이 뜨면 2분 대기
-                except Exception as e:
-                    logger.warning(f"본인 인증 감지 중 예외 발생: {e}")
+                    # 로그인 버튼 클릭
+                    try:
+                        login_button = wait.until(EC.element_to_be_clickable((By.ID, "passwordNext")))
+                        time.sleep(random.uniform(0.7, 1.5))
+                        login_button.click()
+                        time.sleep(random.uniform(0.7, 1.5))
+                    except Exception as e:
+                        logger.error(f"❌ 로그인 버튼 클릭 단계에서 실패: {e}")
+                        return None
 
-                # 로그인 버튼이 안 보일 때까지 대기 (로그인 성공)
-                try:
-                    wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label="로그인"]')))
-                    time.sleep(2)
-                except Exception as e:
-                    logger.error(f"❌ 로그인 완료 대기 중 실패: {e}")
-                    return None
-                
+                    # 본인 인증(추가 인증) 화면 감지
+                    try:
+                        time.sleep(2)
+                        page_source = driver.page_source
+                        if any(keyword in page_source for keyword in ["보안", "코드", "인증", "확인", "전화", "기기", "추가 확인"]):
+                            logger.warning("⚠️ 본인 인증(추가 인증) 화면이 감지되었습니다. 자동화가 중단될 수 있습니다.")
+                            time.sleep(60) # 본인 인증이 뜨면 1분 대기
+                    except Exception as e:
+                        logger.warning(f"본인 인증 감지 중 예외 발생: {e}")
+
+                    # 로그인 버튼이 안 보일 때까지 대기 (로그인 성공)
+                    try:
+                        wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label="로그인"]')))
+                        time.sleep(2)
+                    except Exception as e:
+                        logger.error(f"❌ 로그인 완료 대기 중 실패: {e}")
+                        return None
+
                 # ------------------------------ 유튜브 뮤직 페이지 진입 ------------------------------
                 driver.get("https://music.youtube.com/")
-            
+
                 # ------------------------------ 검색 ------------------------------
                 max_attempts = 5 # 재시도 횟수
                 for attempt in range(max_attempts):
@@ -286,11 +320,11 @@ class YouTubeMusicSearchSong:
                         if not search_input:
                             raise Exception("검색 입력창을 찾을 수 없습니다.")
                         search_input.clear()
-                        time.sleep(random.uniform(0.7, 1.5))
+                        time.sleep(0.5)
                         search_input.send_keys(query)
-                        time.sleep(random.uniform(0.7, 1.5))
+                        time.sleep(1)
                         search_input.send_keys(u'\ue007')  # 엔터키 전송
-                        time.sleep(random.uniform(0.7, 1.5))  # 검색 결과 로딩 대기
+                        time.sleep(2)  # 검색 결과 로딩 대기
                         break
                     except Exception as e:
                         logger.warning(f"검색 입력창 입력 실패(시도 {attempt+1}): {e}")
