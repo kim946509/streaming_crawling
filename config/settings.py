@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # 앱 추가
+    'streaming_site_list', # 크롤링 자동 실행 버튼
     'streaming_site_list.youtube', # 유튜브에서 노래 조회수 크롤링
     'streaming_site_list.youtube_music', # 유튜브 뮤직에서 노래 조회수 크롤링
     'streaming_site_list.genie', # 지니에서 노래 조회수 크롤링
