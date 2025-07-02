@@ -19,15 +19,15 @@ def test_jaerium_youtube_music():
     song_names = [
         "Cheers to the Future",
         "Softness in the Snow",
-        "The Frost of Dreams",
-        "Beneath the Frozen Sky",
-        "The Wisp of Winter",
-        "Sparkles of the Night",
-        "Soft Breezes in Winter",
+        # "The Frost of Dreams",
+        # "Beneath the Frozen Sky",
+        # "The Wisp of Winter",
+        # "Sparkles of the Night",
+        # "Soft Breezes in Winter",
         "The New Year's Moment",
-        "Cheers to the Future",
-        "Softness in the Snow",
-        "The Frost of Dreams",
+        # "Cheers to the Future",
+        # "Softness in the Snow",
+        # "The Frost of Dreams",
     ]
     artist_song_list = [(artist_name, song) for song in song_names]
     results = search_song_youtube_music_jaerium.search_multiple(artist_song_list)
@@ -190,13 +190,13 @@ def test_youtube():
 
 
 if __name__ == "__main__":
-    # print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
-    # test_jaerium_youtube_music()
+    print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
+    test_jaerium_youtube_music()
     # print("\n===== YouTubeMusic(Anonatsue) 테스트 =====")
     # test_anonatsue_youtube_music()
 
-    print("\n===== Genie(Jaerium) 테스트 =====")
-    test_genie_jaerium()
+    # print("\n===== Genie(Jaerium) 테스트 =====")
+    # test_genie_jaerium()
     # print("\n===== Genie(Anonatsue) 테스트 =====")
     # test_genie_anonatsue()
 
