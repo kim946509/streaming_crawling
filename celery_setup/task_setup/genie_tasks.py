@@ -1,5 +1,5 @@
 from celery import shared_task
-from crawling_view.genie_crawler_views import GenieSearchSong, GenieSongCrawler, save_each_to_csv, save_to_db
+from crawling_view.genie.genie_main import run_genie_crawling
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ class rhoonart_songs:
         "The Wisp of Winter",
         "Sparkles of the Night",
         "Soft Breezes in Winter",
-        "The New Year’s Moment",
+        "The New Year's Moment",
         "Cheers to the Future",
         "Softness in the Snow",
         "The Frost of Dreams"
@@ -29,7 +29,7 @@ class rhoonart_songs:
         "Cherry Blossom Serenade",
         "Soft Petal Waltz",
         "Garden of Serenity",
-        "Wind’s Caress",
+        "Wind's Caress",
         "Secret Garden Lullaby",
         "Azure Morning",
         "Lush Green Fields",
@@ -38,20 +38,17 @@ class rhoonart_songs:
 
     @staticmethod
     def crawl_artist(artist_name, song_names):
-        search_song = GenieSearchSong()
-        company_name = "rhoonart" # 회사명
-        artist_song_list = [(artist_name, song) for song in song_names] # 아티스트명, 곡명 리스트
-        search_results = search_song.search_multiple(artist_song_list) # 검색 결과
-        html_list = [item['html'] for item in search_results] # 검색 결과에서 html 추출
-        result_list = GenieSongCrawler.crawl(html_list, artist_song_list) # 곡 정보 추출    
-        logger.info(f"GenieSongCrawler result: {result_list}")
-
-        save_to_db({info['song_name']: info for info in result_list}) # DB 저장
-        logger.info("✅ DB 저장 완료")
+        # 새로운 구조에 맞게 데이터 변환
+        song_list = [
+            {'song_title': song, 'artist_name': artist_name}
+            for song in song_names
+        ]
         
-        filepaths = save_each_to_csv({info['song_name']: info for info in result_list}, company_name, 'youtube_music') # CSV 저장
-        logger.info(f"✅ CSV 저장 완료: {filepaths}")
-        return result_list
+        # 새로운 크롤링 함수 호출
+        results = run_genie_crawling(song_list, save_csv=True, save_db=True)
+        
+        logger.info(f"✅ Genie 크롤링 완료: {len(results)}개 곡")
+        return results
 
 # ------------------------------ Jaerium ------------------------------
 @shared_task

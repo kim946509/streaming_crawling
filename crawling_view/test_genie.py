@@ -4,7 +4,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from genie_crawler_views import GenieSearchSong, GenieSongCrawler, save_each_to_csv, save_to_db
+from genie.genie_main import run_genie_crawling
 
 if __name__ == "__main__":
     # 아티스트별 곡 리스트 딕셔너리
@@ -14,7 +14,7 @@ if __name__ == "__main__":
             "The Wisp of Winter",
             "Sparkles of the Night",
             "Soft Breezes in Winter",
-            "The New Year’s Moment",
+            "The New Year's Moment",
             "Cheers to the Future",
             "Softness in the Snow",
             "The Frost of Dreams"
@@ -32,7 +32,7 @@ if __name__ == "__main__":
             "Cherry Blossom Serenade",
             "Soft Petal Waltz",
             "Garden of Serenity",
-            "Wind’s Caress",
+            "Wind's Caress",
             "Secret Garden Lullaby",
             "Azure Morning",
             "Lush Green Fields",
@@ -40,33 +40,25 @@ if __name__ == "__main__":
             ]
     }
 
-    # (아티스트, 곡명) 튜플 리스트로 변환
-    artist_song_list = [
-        (artist, song)
+    # {'song_title': '곡명', 'artist_name': '가수명'} 형태로 변환
+    song_list = [
+        {'song_title': song, 'artist_name': artist}
         for artist, songs in artist_songs_dict.items()
         for song in songs
     ]
 
-    # 1. 곡 정보 페이지 HTML 수집
-    searcher = GenieSearchSong()
-    html_list = []
-    for artist, song in artist_song_list:
-        print(f"[검색] {artist} - {song}")
-        html = searcher.search(artist, song)
-        html_list.append(html)
-        print(f"HTML 수집 완료: {html is not None}")
-
-    # 2. 곡 정보 크롤링
-    print("\n[크롤링 결과]")
-    results = GenieSongCrawler.crawl(html_list, artist_song_list)
+    # Genie 크롤링 실행
+    print(f"🎵 Genie 크롤링 시작 - 총 {len(song_list)}곡")
+    results = run_genie_crawling(song_list, save_csv=True, save_db=True)
+    
+    print(f"\n🎵 Genie 크롤링 완료 - 성공: {len(results)}곡")
     for result in results:
-        print(f"[Genie] 곡명: {result['song_name']}, 아티스트: {result['artist_name']}, 전체 청취자수: {result['total_person_count']}, 총 재생수: {result['total_play_count']}, 추출일: {result['extracted_date']}")
-
-    # 3. 리스트를 딕셔너리로 변환 (song_name을 key로)
-    results_dict = {item['song_name']: item for item in results}
-
-    # 4. CSV 저장
-    save_each_to_csv(results_dict, "rhoonart", "genie")
-
-    # 5. DB 저장
-    save_to_db(results_dict) 
+        view_count = result.get('view_count', {})
+        if isinstance(view_count, dict):
+            print(f"[Genie] 곡명: {result['song_title']}, 아티스트: {result['artist_name']}, "
+                  f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
+                  f"총 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"크롤링 날짜: {result['crawl_date']}")
+        else:
+            print(f"[Genie] 곡명: {result['song_title']}, 아티스트: {result['artist_name']}, "
+                  f"조회수: {view_count}, 크롤링 날짜: {result['crawl_date']}") 
