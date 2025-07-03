@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from .models import CrawlingManager
+from .models import CrawlingManager, CrawlButton, SongInfo, CrawlingPeriod
 # ------------------------------ Celery Tasks ------------------------------
 from celery_setup.task_setup.genie_tasks import genie_crawl_jaerium_test, genie_crawl_anonatsue_test
 from celery_setup.task_setup.youtube_tasks import youtube_crawl_rhoonart
@@ -19,3 +19,21 @@ class CrawlingManagerAdmin(admin.ModelAdmin):
 
 # ------------------------------ 자동 크롤링 버튼 추가 ------------------------------
 admin.site.register(CrawlingManager, CrawlingManagerAdmin)
+
+@admin.register(CrawlButton)
+class CrawlButtonAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+
+@admin.register(SongInfo)
+class SongInfoAdmin(admin.ModelAdmin):
+    list_display = ('song_id', 'artist_name', 'song_name', 'youtube_url', 'created_at')
+    search_fields = ('artist_name', 'song_name')
+    list_filter = ('created_at', 'updated_at')
+    readonly_fields = ('song_id', 'created_at', 'updated_at')
+
+@admin.register(CrawlingPeriod)
+class CrawlingPeriodAdmin(admin.ModelAdmin):
+    list_display = ('song_id', 'start_date', 'end_date', 'is_active', 'created_at')
+    search_fields = ('song_id',)
+    list_filter = ('is_active', 'start_date', 'end_date', 'created_at')
+    readonly_fields = ('created_at', 'updated_at')

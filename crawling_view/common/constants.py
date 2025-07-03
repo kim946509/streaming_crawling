@@ -114,6 +114,6 @@ class FilePaths:
     LOG_DIR = "logs"
     
     # CSV 파일 컬럼
-    GENIE_COLUMNS = ['song_title', 'artist_name', 'total_person_count', 'total_play_count', 'crawl_date']
-    YOUTUBE_MUSIC_COLUMNS = ['song_title', 'artist_name', 'view_count', 'crawl_date']
-    YOUTUBE_COLUMNS = ['song_id', 'song_title', 'artist_name', 'view_count', 'youtube_url', 'upload_date', 'crawl_date'] 
+    GENIE_COLUMNS = ['song_id','artist_name','song_title','total_person_count', 'view_count', 'crawl_date']
+    YOUTUBE_MUSIC_COLUMNS = ['song_id','artist_name','song_title','view_count', 'crawl_date']
+    YOUTUBE_COLUMNS = ['song_id','artist_name','song_title','view_count', 'youtube_url', 'upload_date', 'crawl_date'] 

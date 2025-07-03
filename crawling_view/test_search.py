@@ -122,7 +122,7 @@ def test_genie_jaerium():
         if isinstance(view_count, dict):
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
                   f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
-                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"전체 재생수: {view_count.get('view_count', 0)}, "
                   f"추출일: {result['crawl_date']}")
         else:
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
@@ -167,7 +167,7 @@ def test_genie_anonatsue():
         if isinstance(view_count, dict):
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
                   f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
-                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"전체 재생수: {view_count.get('view_count', 0)}, "
                   f"추출일: {result['crawl_date']}")
         else:
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
