@@ -70,7 +70,7 @@ def save_each_to_csv(results, company_name, service_name):
         filepath = CSV_DIR / filename # 파일 저장 경로
 
         ''' ⬇️ DataFrame 생성 (컬럼 순서 커스텀 가능)'''
-        columns = ['song_name', 'view_count', 'youtube_url', 'upload_date', 'extracted_date']
+        columns = ['song_name', 'artist_name', 'view_count', 'youtube_url', 'upload_date', 'extracted_date']
         new_df = pd.DataFrame([{col: data.get(col) for col in columns}])
 
         # 기존 파일이 있으면 읽어서 누적, 없으면 새로 생성
@@ -166,30 +166,36 @@ def extract_song_id(youtube_url):
 
 
 '''===================== ⬇️ 크롤링 함수 ====================='''
-def YouTubeSongCrawler(urls):
+def YouTubeSongCrawler(url_artist_list):
     """
-    유튜브 URL 리스트를 받아 각 동영상의 정보를 크롤링
+    유튜브 URL과 아티스트명 리스트를 받아 각 동영상의 정보를 크롤링
+    Args:
+        url_artist_list: [(url, artist_name), (url, artist_name), ...] 형태의 리스트
     Returns:
         dict: {
             song_id: {
                 'song_name': str,  # 동영상 제목
+                'artist_name': str, # 아티스트명
                 'view_count': int,  # 조회수 (숫자형)
                 'youtube_url': str, # 유튜브 URL
                 'upload_date': str, # 업로드 날짜 (YYYY.MM.DD 형식)
-                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY.MM.DD 형식)}}
+                'extracted_date': str   # 크롤링한 날짜와 시간 (YYYY-MM-DD HH:MM:SS 형식)
+            }
+        }
     """
     results = {}
-    url_id_map = {}
+    url_id_artist_map = {}
 
-    # 각 url에서 song_id 추출
-    for url in urls:
+    # 각 (url, artist_name)에서 song_id 추출
+    for url, artist_name in url_artist_list:
         song_id = extract_song_id(url)
         if song_id:
-            url_id_map[song_id] = url
+            url_id_artist_map[song_id] = {'url': url, 'artist_name': artist_name}
         else:
             # 유효하지 않은 URL 처리
             results[url] = {
                 'song_name': None,
+                'artist_name': artist_name,
                 'view_count': None,
                 'youtube_url': url,
                 'upload_date': None,
@@ -200,7 +206,9 @@ def YouTubeSongCrawler(urls):
     try:
         with setup_driver() as driver:
             wait = WebDriverWait(driver, 10)
-            for song_id, url in url_id_map.items():
+            for song_id, data in url_id_artist_map.items():
+                url = data['url']
+                artist_name = data['artist_name']
                 try:
                     # 현재 크롤링 날짜 기록
                     extracted_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -283,23 +291,25 @@ def YouTubeSongCrawler(urls):
                     results[song_id] = {
                         'service_name': 'youtube',
                         'song_name': song_name,
+                        'artist_name': artist_name,
                         'view_count': view_count,
                         'youtube_url': youtube_url,
                         'upload_date': upload_date,
                         'extracted_date': extracted_date
                     }
 
-                    logger.info(f"✅ 크롤링 성공 - 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
+                    logger.info(f"✅ 크롤링 성공 - 아티스트: {artist_name}, 제목: {song_name}, 조회수: {view_count}, 업로드일: {upload_date}")
 
                     # # 디버깅용 HTML 저장
                     # with open(f"youtube_debug_{song_id}.html", "w", encoding="utf-8") as f:
                     #     f.write(driver.page_source)
 
                 except Exception as e:
-                    logger.error(f"❌ {song_name} 크롤링 실패: {e}", exc_info=True)
+                    logger.error(f"❌ {artist_name} - {song_name} 크롤링 실패: {e}", exc_info=True)
                     results[song_id] = {
                         'service_name': 'youtube',
                         'song_name': None,
+                        'artist_name': artist_name,
                         'view_count': None,
                         'youtube_url': url,
                         'upload_date': None,
