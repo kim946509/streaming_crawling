@@ -231,61 +231,93 @@ class GenieSongCrawler:
             if html is None:
                 logger.error(f"❌ HTML이 None입니다: {target_artist} - {target_song}")
                 continue
+            
+            # 각 곡마다 변수 초기화
+            song_name = None
+            artist_name = None
+            total_person_count = 0
+            total_play_count = 0
+            success = False
+            
             for attempt in range(max_attempts):
                 try:
-                    logger.info(f"[시도 {attempt+1}/5] '{target_artist} - {target_song}' 정보 추출 시도 중...")
+                    logger.info(f"[시도 {attempt+1}/{max_attempts}] '{target_artist} - {target_song}' 정보 추출 시도 중...")
                     soup = BeautifulSoup(html, 'html.parser')
 
                     # song_name 추출
-                    song_name = None
+                    current_song_name = None
                     song_name_tag = soup.find('h2', class_='name')
                     if song_name_tag:
-                        song_name = song_name_tag.text.strip()
-                        logger.info(f"✅ song_name 추출 성공: {song_name}")
+                        current_song_name = song_name_tag.text.strip()
+                        logger.info(f"✅ song_name 추출 성공: {current_song_name}")
                     else:
                         logger.warning("❌ song_name 태그(h2.name) 추출 실패")
+                        continue
 
-                    if not song_name or normalize_song_name(song_name) != normalize_song_name(target_song):
-                        logger.warning(f"❌ 검색 곡명과 파싱된 곡명이 다릅니다. 저장하지 않습니다. 검색 '{target_song}' → 파싱 '{song_name}'")
-                        continue  # 저장하지 않음
+                    # 곡명 검증
+                    if not current_song_name or normalize_song_name(current_song_name) != normalize_song_name(target_song):
+                        logger.warning(f"❌ 검색 곡명과 파싱된 곡명이 다릅니다. 재시도합니다. 검색 '{target_song}' → 파싱 '{current_song_name}'")
+                        continue
+
+                    # 검증 통과 - 변수에 저장
+                    song_name = current_song_name
 
                     # artist_name 추출 (info-data의 첫 번째 li의 value)
-                    artist_name = None
+                    current_artist_name = None
                     artist_li = soup.select_one('ul.info-data li:nth-of-type(1) span.value')
                     if artist_li:
-                        artist_name = artist_li.text.strip()
-                        logger.info(f"✅ artist_name 추출 성공: {artist_name}")
+                        current_artist_name = artist_li.text.strip()
+                        logger.info(f"✅ artist_name 추출 성공: {current_artist_name}")
                     else:
                         logger.warning("❌ artist_name 태그(ul.info-data > li:nth-of-type(1) > span.value) 추출 실패")
-                    if not artist_name:
-                        artist_name = target_artist
+                    
+                    # 아티스트명 설정 (추출된 값이 없으면 타겟 아티스트명 사용)
+                    artist_name = current_artist_name if current_artist_name else target_artist
 
+                    # 청취자수, 재생수 추출
                     total_div = soup.find('div', class_='total')
                     if total_div:
                         p_tags = total_div.find_all('p')
                         if len(p_tags) >= 2:
-                            # 첫 번째 <p>: 전체 청취자수
-                            total_person_count = int(p_tags[0].text.replace(',', '').strip())
-                            # 두 번째 <p>: 전체 재생수
-                            total_play_count = int(p_tags[1].text.replace(',', '').strip())
+                            try:
+                                # 첫 번째 <p>: 전체 청취자수
+                                total_person_count = int(p_tags[0].text.replace(',', '').strip())
+                                # 두 번째 <p>: 전체 재생수
+                                total_play_count = int(p_tags[1].text.replace(',', '').strip())
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f"❌ 청취자수/재생수 변환 실패: {e}")
+                                total_person_count = 0
+                                total_play_count = 0
                         else:
                             total_person_count = 0
                             total_play_count = 0
                     else:
                         total_person_count = 0
                         total_play_count = 0
+
+                    # 성공적으로 파싱 완료
+                    success = True
+                    logger.info(f"✅ '{target_song}' 파싱 성공!")
+                    break  # 성공하면 재시도 루프 종료
+
                 except Exception as e:
-                    logger.error(f"❌ GenieSongCrawler.crawl() 에러: {e}", exc_info=True)
+                    logger.error(f"❌ GenieSongCrawler.crawl() 에러 (시도 {attempt+1}/{max_attempts}): {e}", exc_info=True)
                     continue
 
-            results.append({
-                "service_name": "genie",
-                "artist_name": artist_name,
-                "song_name": song_name,
-                "total_person_count": total_person_count,
-                "total_play_count": total_play_count,
-                "extracted_date": datetime.now().strftime('%Y-%m-%d')
-            })
+            # 성공한 경우만 결과에 추가
+            if success and song_name:
+                results.append({
+                    "service_name": "genie",
+                    "artist_name": artist_name,
+                    "song_name": song_name,
+                    "total_person_count": total_person_count,
+                    "total_play_count": total_play_count,
+                    "extracted_date": datetime.now().strftime('%Y-%m-%d')
+                })
+                logger.info(f"✅ '{target_song}' 데이터 저장 완료")
+            else:
+                logger.warning(f"❌ '{target_song}' 파싱 실패 - 데이터 저장하지 않음")
+        
         return results
 
 
