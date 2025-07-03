@@ -5,10 +5,45 @@
 # Genie 관련 셀렉터
 class GenieSelectors:
     # 검색 관련
-    SEARCH_INPUT = "input[type='search']"
+    SEARCH_INPUT = [
+        "input[type='search']",
+        "input.searchField",
+        "#keyword"
+    ]
     SEARCH_BUTTON = "button[type='submit']"
+    
+    # 곡 정보 관련
+    SONG_INFO_BUTTON = [
+        "a.btn-basic",
+        "a.btn-info",
+        ".song-info-btn",
+        "a[title='곡정보']"
+    ]
+    SONG_TITLE = [
+        ".song-title",
+        "h2.title",
+        ".info-data .title"
+    ]
+    ARTIST_INFO = [
+        ".artist-name",
+        ".info-data .artist",
+        ".artist"
+    ]
+    
+    # 통계 정보 관련
+    TOTAL_STATS = [
+        ".total-stats",
+        ".stats-container",
+        ".song-stats"
+    ]
+    TOTAL_STATS_PARAGRAPHS = [
+        "p",
+        ".stat-item",
+        ".count-item"
+    ]
+    
+    # 기존 셀렉터들
     SONG_ITEMS = "tr.list__item"
-    SONG_TITLE = "a.link__text"
     ARTIST_NAME = "a.link__text"
     ARTIST_LINK = "td.info a.link__text"
     PLAY_COUNT = "span.count__text"
@@ -75,8 +110,8 @@ class CommonSettings:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     CSV_ENCODING = 'utf-8-sig'
     DEFAULT_WAIT_TIME = 10
-    RANDOM_DELAY_MIN = 0.7
-    RANDOM_DELAY_MAX = 1.5
+    RANDOM_DELAY_MIN = 0.3
+    RANDOM_DELAY_MAX = 0.8
     
     # Chrome 드라이버 옵션
     CHROME_OPTIONS = [

@@ -15,6 +15,6 @@ class YouTubeSongViewCount(BaseModel):
         db_table = 'youtube_crawling_data'
         ordering = ['-extracted_date', '-created_at']
         unique_together = ['song_id', 'extracted_date']  # 같은 날 중복 크롤링 방지
-        
+
     def __str__(self):
         return f"YouTube Song {self.song_id} - {self.extracted_date}"

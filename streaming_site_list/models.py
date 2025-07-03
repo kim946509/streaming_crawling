@@ -19,23 +19,10 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True  # 추상 모델로 설정 (테이블 생성 안함)
 
-    def soft_delete(self):
-        """소프트 삭제 메서드"""
-        self.is_deleted = True
-        self.deleted_at = datetime.now()
-        self.save()
-
-    def restore(self):
-        """삭제 복구 메서드"""
-        self.is_deleted = False
-        self.deleted_at = None
-        self.save()
-
 class SongInfo(BaseModel):
     """
     노래 기본 정보 모델
     """
-    song_id = models.CharField(max_length=32, unique=True, help_text="노래 고유 ID")
     artist_name = models.CharField(max_length=255, help_text="아티스트명")
     song_name = models.CharField(max_length=255, help_text="곡명")
     youtube_url = models.URLField(max_length=500, blank=True, null=True, help_text="YouTube URL")
@@ -46,6 +33,7 @@ class SongInfo(BaseModel):
         
     def __str__(self):
         return f"[{self.song_id}] {self.artist_name} - {self.song_name}"
+        
 
 class CrawlingPeriod(BaseModel):
     """
@@ -54,8 +42,7 @@ class CrawlingPeriod(BaseModel):
     song_id = models.CharField(max_length=32, help_text="노래 ID")
     start_date = models.DateField(help_text="크롤링 시작일")
     end_date = models.DateField(help_text="크롤링 종료일")
-    is_active = models.BooleanField(default=True, help_text="활성화 여부")
-    
+
     class Meta:
         db_table = 'crawling_period'
         ordering = ['-created_at']
