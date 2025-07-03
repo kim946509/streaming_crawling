@@ -41,6 +41,7 @@ class SongInfo(BaseModel):
     youtube_url = models.URLField(max_length=500, blank=True, null=True, help_text="YouTube URL")
 
     class Meta:
+        db_table = 'song_info'
         unique_together = ['artist_name', 'song_name']  # 아티스트+곡명 조합으로 중복 방지
         
     def __str__(self):
@@ -56,6 +57,7 @@ class CrawlingPeriod(BaseModel):
     is_active = models.BooleanField(default=True, help_text="활성화 여부")
     
     class Meta:
+        db_table = 'crawling_period'
         ordering = ['-created_at']
         
     def __str__(self):

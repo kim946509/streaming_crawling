@@ -12,6 +12,7 @@ class YouTubeSongViewCount(BaseModel):
     extracted_date = models.DateField(help_text="크롤링 실행 날짜")
 
     class Meta:
+        db_table = 'youtube_crawling_data'
         ordering = ['-extracted_date', '-created_at']
         unique_together = ['song_id', 'extracted_date']  # 같은 날 중복 크롤링 방지
         
