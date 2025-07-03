@@ -5,17 +5,15 @@ import logging
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from crawling_view.youtube_music_crawler_views import YouTubeMusicSearchSong, YouTubeMusicSongCrawler, save_each_to_csv as save_each_to_csv_ytmusic
+from crawling_view.youtube_music.youtube_music_main import run_youtube_music_crawling
 from user_id_and_password import youtube_music_id, youtube_music_password
-from crawling_view.genie_crawler_views import GenieSearchSong, GenieSongCrawler, save_each_to_csv as save_each_to_csv_genie
-from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv as save_each_to_csv_youtube
+from crawling_view.genie.genie_main import run_genie_crawling
+from crawling_view.youtube.youtube_main import run_youtube_crawling
 
 
 '''===================== 유튜브 뮤직 테스트(jaerium) ====================='''
 def test_jaerium_youtube_music():
-    search_song_youtube_music_jaerium = YouTubeMusicSearchSong(youtube_music_id, youtube_music_password)
     artist_name = "Jaerium"
-    company_name = "rhoonart"
     song_names = [
         "Cheers to the Future",
         "Softness in the Snow",
@@ -29,25 +27,31 @@ def test_jaerium_youtube_music():
         # "Softness in the Snow",
         # "The Frost of Dreams",
     ]
-    artist_song_list = [(artist_name, song) for song in song_names]
-    results = search_song_youtube_music_jaerium.search_multiple(artist_song_list)
+    
+    # 새로운 구조에 맞게 데이터 변환
+    song_list = [
+        {'song_title': song, 'artist_name': artist_name}
+        for song in song_names
+    ]
+    
+    # 새로운 크롤링 함수 호출
+    results = run_youtube_music_crawling(
+        song_list, 
+        youtube_music_id, 
+        youtube_music_password, 
+        save_csv=True, 
+        save_db=True
+    )
+    
     logging.info(f"[❤️ YouTube Music(Jaerium)] 크롤링 곡 개수: {len(results)}개")
-
-    html_list = [result['html'] for result in results]
-    info_list = YouTubeMusicSongCrawler.extract_song_info_list(html_list, artist_song_list)
-    for info in info_list:
-        print(f"[YouTubeMusic] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 조회수: {info['view_count']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_ytmusic({info['song_name']: info for info in info_list}, company_name, 'youtube_music')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
+    for result in results:
+        print(f"[YouTubeMusic] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+              f"조회수: {result['view_count']}, 크롤링 날짜: {result['crawl_date']}")
 
 
 '''===================== 유튜브 뮤직 테스트(anonatsue) ====================='''
 def test_anonatsue_youtube_music():
-    search_song_youtube_music_anonatsue = YouTubeMusicSearchSong(youtube_music_id, youtube_music_password)
     artist_name = "anonatsue"
-    company_name = "rhoonart"
     song_names = [
         "Dreamy Orchards",
         "Emerald Symphony",
@@ -67,54 +71,67 @@ def test_anonatsue_youtube_music():
         "Lush Green Fields",
         "Meadow Whispers",
     ]
-    artist_song_list = [(artist_name, song) for song in song_names]
-    results = search_song_youtube_music_anonatsue.search_multiple(artist_song_list)
+    
+    # 새로운 구조에 맞게 데이터 변환
+    song_list = [
+        {'song_title': song, 'artist_name': artist_name}
+        for song in song_names
+    ]
+    
+    # 새로운 크롤링 함수 호출
+    results = run_youtube_music_crawling(
+        song_list, 
+        youtube_music_id, 
+        youtube_music_password, 
+        save_csv=True, 
+        save_db=True
+    )
+    
     logging.info(f"[❤️ YouTube Music(Anonatsue)] 크롤링 곡 개수: {len(results)}개")
-
-    html_list = [result['html'] for result in results]
-    info_list = YouTubeMusicSongCrawler.extract_song_info_list(html_list, artist_song_list)
-    for info in info_list:
-        print(f"[YouTubeMusic] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 조회수: {info['view_count']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_ytmusic({info['song_name']: info for info in info_list}, company_name, 'youtube_music')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
+    for result in results:
+        print(f"[YouTubeMusic] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+              f"조회수: {result['view_count']}, 크롤링 날짜: {result['crawl_date']}")
 
 
 '''===================== 지니 테스트(jaerium) ====================='''
 def test_genie_jaerium():
-    search_song_genie = GenieSearchSong()
     artist_name = "Jaerium"
-    company_name = "rhoonart"
     song_names = [
         "Beneath the Frozen Sky",
         "The Wisp of Winter",
         "Sparkles of the Night",
         "Soft Breezes in Winter",
-        "The New Year’s Moment",
+        "The New Year's Moment",
         "Cheers to the Future",
         "Softness in the Snow", 
         "The Frost of Dreams" 
         ]
-    artist_song_list = [(artist_name, song) for song in song_names]
-    results = search_song_genie.search_multiple(artist_song_list)
+    
+    # 새로운 구조에 맞게 데이터 변환
+    song_list = [
+        {'song_title': song, 'artist_name': artist_name}
+        for song in song_names
+    ]
+    
+    # 새로운 크롤링 함수 호출
+    results = run_genie_crawling(song_list, save_csv=True, save_db=True)
+    
     logging.info(f"[🩵 Genie(Jaerium)] 크롤링 곡 개수: {len(results)}개")
-
-    html_list = [result['html'] for result in results]
-    info_list = GenieSongCrawler.crawl(html_list, artist_song_list)
-    for info in info_list:
-        print(f"[Genie] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 전체 청취자수: {info['total_person_count']}, 전체 재생수: {info['total_play_count']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_genie({info['song_name']: info for info in info_list}, company_name, 'genie')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
+    for result in results:
+        view_count = result.get('view_count', {})
+        if isinstance(view_count, dict):
+            print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+                  f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
+                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"추출일: {result['crawl_date']}")
+        else:
+            print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+                  f"조회수: {view_count}, 추출일: {result['crawl_date']}")
 
 
 '''===================== 지니 테스트(anonatsue) ====================='''
 def test_genie_anonatsue():
-    search_song_genie = GenieSearchSong()
     artist_name = "anonatsue"
-    company_name = "rhoonart"
     song_names = [
         "Dreamy Orchards",
         "Emerald Symphony",
@@ -128,29 +145,37 @@ def test_genie_anonatsue():
         "Cherry Blossom Serenade",
         "Soft Petal Waltz",
         "Garden of Serenity",
-        "Wind’s Caress",
+        "Wind's Caress",
         "Secret Garden Lullaby",
         "Azure Morning",
         "Lush Green Fields",
         "Meadow Whispers"
     ]
-    artist_song_list = [(artist_name, song) for song in song_names]
-    results = search_song_genie.search_multiple(artist_song_list)
+    
+    # 새로운 구조에 맞게 데이터 변환
+    song_list = [
+        {'song_title': song, 'artist_name': artist_name}
+        for song in song_names
+    ]
+    
+    # 새로운 크롤링 함수 호출
+    results = run_genie_crawling(song_list, save_csv=True, save_db=True)
+    
     logging.info(f"[🩵 Genie(Anonatsue)] 크롤링 곡 개수: {len(results)}개")
-
-    html_list = [result['html'] for result in results]
-    info_list = GenieSongCrawler.crawl(html_list, artist_song_list)
-    for info in info_list:
-        print(f"[Genie] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 전체 청취자수: {info['total_person_count']}, 전체 재생수: {info['total_play_count']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_genie({info['song_name']: info for info in info_list}, company_name, 'genie')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
+    for result in results:
+        view_count = result.get('view_count', {})
+        if isinstance(view_count, dict):
+            print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+                  f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
+                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"추출일: {result['crawl_date']}")
+        else:
+            print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
+                  f"조회수: {view_count}, 추출일: {result['crawl_date']}")
 
 
 '''===================== 유튜브 테스트 ====================='''
 def test_youtube():
-    company_name = "rhoonart"
     artist_name = "Jaerium"
     song_urls = [
         "https://www.youtube.com/watch?v=Sv2mIvMwrSY",
@@ -179,18 +204,18 @@ def test_youtube():
         # "https://www.youtube.com/watch?v=61yiWvXwB74",
         # "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
     ]
-     # URL과 artist_name을 함께 전달
+    
+    # URL과 artist_name을 함께 전달
     url_artist_list = [(url, artist_name) for url in song_urls]
-    results = YouTubeSongCrawler(url_artist_list)
+    
+    # 새로운 크롤링 함수 호출
+    results = run_youtube_crawling(url_artist_list, save_csv=True, save_db=True)
   
     logging.info(f"[🖤 YouTube] 크롤링 곡 개수: {len(results)}개")
     for song_id, info in results.items():
-        print(f"[YouTube] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 조회수: {info['view_count']}, URL: {info['youtube_url']}, 업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_youtube(results, company_name, 'youtube')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
-
+        print(f"[YouTube] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, "
+              f"조회수: {info['view_count']}, URL: {info['youtube_url']}, "
+              f"업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
 
 
 if __name__ == "__main__":
