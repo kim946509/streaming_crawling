@@ -8,7 +8,7 @@ django.setup()
 from crawling_view.youtube_music.youtube_music_main import run_youtube_music_crawling
 from user_id_and_password import youtube_music_id, youtube_music_password
 from crawling_view.genie.genie_main import run_genie_crawling
-from crawling_view.youtube_crawler_views import YouTubeSongCrawler, save_each_to_csv as save_each_to_csv_youtube
+from crawling_view.youtube.youtube_main import run_youtube_crawling
 
 
 '''===================== 유튜브 뮤직 테스트(jaerium) ====================='''
@@ -176,7 +176,6 @@ def test_genie_anonatsue():
 
 '''===================== 유튜브 테스트 ====================='''
 def test_youtube():
-    company_name = "rhoonart"
     artist_name = "Jaerium"
     song_urls = [
         "https://www.youtube.com/watch?v=Sv2mIvMwrSY",
@@ -205,30 +204,30 @@ def test_youtube():
         # "https://www.youtube.com/watch?v=61yiWvXwB74",
         # "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
     ]
-     # URL과 artist_name을 함께 전달
+    
+    # URL과 artist_name을 함께 전달
     url_artist_list = [(url, artist_name) for url in song_urls]
-    results = YouTubeSongCrawler(url_artist_list)
+    
+    # 새로운 크롤링 함수 호출
+    results = run_youtube_crawling(url_artist_list, save_csv=True, save_db=True)
   
     logging.info(f"[🖤 YouTube] 크롤링 곡 개수: {len(results)}개")
     for song_id, info in results.items():
-        print(f"[YouTube] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 조회수: {info['view_count']}, URL: {info['youtube_url']}, 업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
-    filepaths = save_each_to_csv_youtube(results, company_name, 'youtube')
-    print("저장된 파일 경로:")
-    for song, path in filepaths.items():
-        print(f"{song}: {path}")
-
+        print(f"[YouTube] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, "
+              f"조회수: {info['view_count']}, URL: {info['youtube_url']}, "
+              f"업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
 
 
 if __name__ == "__main__":
     # print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
     # test_jaerium_youtube_music()
-    print("\n===== YouTubeMusic(Anonatsue) 테스트 =====")
-    test_anonatsue_youtube_music()
+    # print("\n===== YouTubeMusic(Anonatsue) 테스트 =====")
+    # test_anonatsue_youtube_music()
 
     # print("\n===== Genie(Jaerium) 테스트 =====")
     # test_genie_jaerium()
     # print("\n===== Genie(Anonatsue) 테스트 =====")
     # test_genie_anonatsue()
 
-    # print("\n===== YouTube 테스트 =====")
-    # test_youtube()
+    print("\n===== YouTube 테스트 =====")
+    test_youtube()
