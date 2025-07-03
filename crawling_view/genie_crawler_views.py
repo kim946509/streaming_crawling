@@ -312,7 +312,7 @@ class GenieSongCrawler:
                     "song_name": song_name,
                     "total_person_count": total_person_count,
                     "total_play_count": total_play_count,
-                    "extracted_date": datetime.now().strftime('%Y-%m-%d')
+                    "extracted_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
                 logger.info(f"✅ '{target_song}' 데이터 저장 완료")
             else:
