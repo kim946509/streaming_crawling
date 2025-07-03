@@ -12,37 +12,15 @@ class GenieSelectors:
     ]
     SEARCH_BUTTON = "button[type='submit']"
     
-    # 곡 정보 관련
-    SONG_INFO_BUTTON = [
-        "a.btn-basic",
-        "a.btn-info",
-        ".song-info-btn",
-        "a[title='곡정보']"
-    ]
-    SONG_TITLE = [
-        ".song-title",
-        "h2.title",
-        ".info-data .title"
-    ]
-    ARTIST_INFO = [
-        ".artist-name",
-        ".info-data .artist",
-        ".artist"
-    ]
+    # 곡 정보 관련 (실제 동작하는 셀렉터)
+    SONG_INFO_BUTTON = 'a.btn-basic.btn-info[onclick^="fnViewSongInfo"]'
+    SONG_TITLE = 'h2.name'  # 곡 정보 페이지의 곡명
     
-    # 통계 정보 관련
-    TOTAL_STATS = [
-        ".total-stats",
-        ".stats-container",
-        ".song-stats"
-    ]
-    TOTAL_STATS_PARAGRAPHS = [
-        "p",
-        ".stat-item",
-        ".count-item"
-    ]
+    # 곡 정보 페이지 통계 관련
+    TOTAL_STATS = 'div.total'  # 통계 정보 컨테이너
+    TOTAL_STATS_PARAGRAPHS = 'p'  # 통계 수치
     
-    # 기존 셀렉터들
+    # 기존 검색 결과 관련 셀렉터들
     SONG_ITEMS = "tr.list__item"
     ARTIST_NAME = "a.link__text"
     ARTIST_LINK = "td.info a.link__text"
