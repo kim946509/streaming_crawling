@@ -18,6 +18,24 @@ from pathlib import Path
 import random
 '''===================== logging 설정 ====================='''
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # 로거 레벨을 DEBUG로 설정
+
+# 파일 핸들러 설정
+file_handler = logging.FileHandler('youtube_music_crawler.log', encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+
+# 콘솔 핸들러 설정
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# 포맷터 설정
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# 핸들러 추가
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 
 '''===================== ⬇️ 고객사 하위에 서비스별 폴더를 모두 생성 함수 ====================='''
@@ -371,67 +389,115 @@ class YouTubeMusicSearchSong:
 '''===================== ⬇️ 유튜브 뮤직 노래 크롤링 함수 ====================='''
 class YouTubeMusicSongCrawler():
     @staticmethod
+    def normalize_text(text):
+        """특수문자와 공백을 정규화"""
+        if not text:
+            return ''
+        # 유니코드 정규화 (아포스트로피, 따옴표 등을 통일)
+        import unicodedata
+        text = unicodedata.normalize('NFKC', text)
+        # 모든 아포스트로피를 ' 로 통일
+        text = text.replace('\u2018', "'").replace('\u2019', "'").replace('\u0060', "'").replace('\u00B4', "'")
+        # 공백 정규화 및 소문자 변환
+        return ' '.join(text.lower().split())
+
+    @staticmethod
     def extract_song_info_list(html_list, artist_song_list):
         """
         여러 곡의 HTML 결과와 (아티스트, 곡명) 리스트를 받아 각각의 곡 정보(곡명, 아티스트, 조회수)를 추출
         """
         results = []
-        max_attempts = 6
         for html, (target_artist, target_song) in zip(html_list, artist_song_list):
-            for attempt in range(max_attempts):
-                try:
-                    logger.info(f"[시도 {attempt+1}/5] '{target_artist} - {target_song}' 정보 추출 시도 중...")
-                    soup = BeautifulSoup(html, 'html.parser')
-                    song_items = soup.select('ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer')
-                    found = False
-                    for item in song_items:
-                        try:
-                            # 곡명 추출
-                            song_name_tag = item.select_one('yt-formatted-string.title a')
-                            song_name = song_name_tag.get_text(strip=True) if song_name_tag else None
+            try:
+                logger.info(f"[시도] '{target_artist} - {target_song}' 정보 추출 시도 중...")
+                soup = BeautifulSoup(html, 'html.parser')
+                song_items = soup.select('ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer')
+                
+                found_song = None  # 찾은 곡 정보를 저장할 변수
 
-                            # 아티스트명 추출 (secondary-flex-columns 내 첫 번째 a 태그)
-                            artist_column = item.select_one('.secondary-flex-columns')
-                            artist_name = None
-                            if artist_column:
-                                artist_a = artist_column.select_one('a')
-                                artist_name = artist_a.get_text(strip=True) if artist_a else None
+                for item in song_items:
+                    try:
+                        # 곡명 추출
+                        song_name_tag = item.select_one('yt-formatted-string.title a')
+                        song_name = song_name_tag.get_text(strip=True) if song_name_tag else None
 
-                            # 조회수 추출 (flex-column 중 '회'가 들어간 텍스트)
-                            view_count = None
-                            for flex_col in item.select('yt-formatted-string.flex-column.style-scope.ytmusic-responsive-list-item-renderer'):
-                                text = flex_col.get('aria-label', '')  # aria-label 속성에서 텍스트 추출
-                                if not text:  # aria-label이 없으면 텍스트 컨텐츠 사용
-                                    text = flex_col.get_text(strip=True)
-                                if '회' in text:
-                                    view_count = text.replace('회', '').replace('재생', '').strip()
-                                    break
-                            # 디버깅을 위한 로깅 추가
-                            if view_count is None:
-                                logger.debug(f"조회수를 찾을 수 없음: {item}")
-                            # 정확히 일치하는 곡만 추출
-                            if song_name and artist_name and song_name.replace(' ', '').lower() == target_song.replace(' ', '').lower() and target_artist.replace(' ', '').lower() in artist_name.replace(' ', '').lower():
-                                logger.info(f"[성공] '{target_artist} - {target_song}' → 곡명: {song_name}, 아티스트: {artist_name}, 조회수: {view_count}, 추출일: {datetime.now().strftime('%Y.%m.%d')}")
-                                results.append({
+                        # 아티스트명 추출
+                        artist_column = item.select_one('.secondary-flex-columns')
+                        artist_name = None
+                        if artist_column:
+                            artist_a = artist_column.select_one('a')
+                            artist_name = artist_a.get_text(strip=True) if artist_a else None
+
+                        # 조회수 추출
+                        view_count = None
+                        flex_columns = item.select('yt-formatted-string.flex-column')
+                        
+                        for flex_col in flex_columns:
+                            aria_label = flex_col.get('aria-label', '')
+                            if '회' in aria_label and '재생' in aria_label:
+                                view_count = aria_label.replace('회', '').replace('재생', '').strip()
+                                break
+
+                        # 디버그 로깅
+                        if song_name and artist_name:
+                            normalized_song = YouTubeMusicSongCrawler.normalize_text(song_name)
+                            normalized_target = YouTubeMusicSongCrawler.normalize_text(target_song)
+                            normalized_artist = YouTubeMusicSongCrawler.normalize_text(artist_name)
+                            normalized_target_artist = YouTubeMusicSongCrawler.normalize_text(target_artist)
+                            
+                            logger.debug(f"검사 중: 제목='{song_name}' → '{normalized_song}' vs '{target_song}' → '{normalized_target}'")
+                            logger.debug(f"검사 중: 아티스트='{artist_name}' → '{normalized_artist}' vs '{target_artist}' → '{normalized_target_artist}'")
+
+                            # 정규화된 문자열로 비교
+                            title_match = normalized_song == normalized_target
+                            artist_match = normalized_artist == normalized_target_artist
+                            
+                            logger.debug(f"일치 검사: 제목 일치={title_match}, 아티스트 일치={artist_match}")
+                            
+                            if title_match and artist_match:
+                                found_song = {
                                     'service_name': 'youtube_music',
                                     'song_name': song_name,
                                     'artist_name': artist_name,
                                     'view_count': view_count,
-                                    'extracted_date': datetime.now().strftime('%Y.%m.%d')
-                                })
-                                found = True
-                                break
-                        except Exception as e:
-                            logger.warning(f"[곡 파싱 예외] '{target_artist} - {target_song}' 항목에서 예외 발생: {e}")
-                            continue
-                    if not found:
-                        logger.warning(f"[❌실패❌] '{target_artist} - {target_song}'와 정확히 일치하는 곡을 찾지 못함.")
-                        results.append({'song_name': target_song, 'artist_name': target_artist, 'view_count': None, 'extracted_date': datetime.now().strftime('%Y.%m.%d')})
-                    break  # 성공적으로 파싱했으면 재시도 중단
-                except Exception as e:
-                    logger.error(f"[예외] '{target_artist} - {target_song}' 정보 추출 중 예외 발생(시도 {attempt+1}/5): {e}")
-                    if attempt == max_attempts - 1:
-                        logger.error(f"[❌최종 실패❌] '{target_artist} - {target_song}' 정보 추출 5회 모두 실패. 기본값 반환.")
-                        results.append({'song_name': target_song, 'artist_name': target_artist, 'view_count': None, 'extracted_date': datetime.now().strftime('%Y.%m.%d')})
-                    continue
+                                    'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                }
+                                logger.info(f"[성공] 일치하는 곡 발견: {song_name} - {artist_name} ({view_count}회)")
+                                results.append(found_song)
+                                logger.info(f"[결과 추가] {found_song['song_name']} - {found_song['artist_name']}")
+                                break  # 일치하는 곡을 찾으면 내부 루프 종료
+                            else:
+                                if not title_match:
+                                    logger.debug(f"제목 불일치: '{normalized_song}' != '{normalized_target}'")
+                                if not artist_match:
+                                    logger.debug(f"아티스트 불일치: '{normalized_artist}' != '{normalized_target_artist}'")
+
+                    except Exception as e:
+                        logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")
+                        continue
+
+                # 검색 결과 처리 - found_song이 없을 때만 기본값 추가
+                if not found_song:
+                    # 일치하는 곡을 찾지 못한 경우 기본값 추가
+                    default_result = {
+                        'service_name': 'youtube_music',
+                        'song_name': target_song,
+                        'artist_name': target_artist,
+                        'view_count': None,
+                        'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    results.append(default_result)
+                    logger.warning(f"[실패] '{target_artist} - {target_song}'와 일치하는 곡을 찾지 못함")
+
+            except Exception as e:
+                logger.error(f"전체 파싱 중 예외 발생: {e}")
+                # 예외 발생 시 기본값 추가
+                results.append({
+                    'service_name': 'youtube_music',
+                    'song_name': target_song,
+                    'artist_name': target_artist,
+                    'view_count': None,
+                    'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                })
+
         return results

@@ -193,7 +193,7 @@ def YouTubeSongCrawler(urls):
                 'view_count': None,
                 'youtube_url': url,
                 'upload_date': None,
-                'extracted_date': datetime.now().strftime('%Y.%m.%d'),
+                'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'error': '유효하지 않은 유튜브 URL'
             }
 
@@ -203,7 +203,7 @@ def YouTubeSongCrawler(urls):
             for song_id, url in url_id_map.items():
                 try:
                     # 현재 크롤링 날짜 기록
-                    extracted_date = datetime.now().strftime('%Y.%m.%d')
+                    extracted_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     youtube_url = url  # 입력받은 원본 URL 사용
                     
                     # 페이지 로드
@@ -303,7 +303,7 @@ def YouTubeSongCrawler(urls):
                         'view_count': None,
                         'youtube_url': url,
                         'upload_date': None,
-                        'extracted_date': datetime.now().strftime('%Y.%m.%d'),
+                        'extracted_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     }
                     continue
 
