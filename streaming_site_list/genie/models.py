@@ -1,15 +1,14 @@
 from django.db import models
+from streaming_site_list.models import BaseModel
 
-class GenieSongViewCount(models.Model):
+class GenieSongViewCount(BaseModel):
     """
     Genie 플랫폼 크롤링 결과 모델
     """
-    id = models.AutoField(primary_key=True)
-    song_id = models.IntegerField()  # SongInfo의 song_id와 연결 (FK 없이)
+    song_id = models.CharField(max_length=32, help_text="노래 ID")
     total_person_count = models.BigIntegerField(default=0, help_text="총 청취자 수")
     view_count = models.BigIntegerField(default=0, help_text="총 재생 수")
     extracted_date = models.DateField(help_text="크롤링 실행 날짜")
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-extracted_date', '-created_at']
