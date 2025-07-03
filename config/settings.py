@@ -36,27 +36,17 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
 
     # 앱 추가
-    'streaming_site_list', # 크롤링 자동 실행 버튼
-    'streaming_site_list.youtube', # 유튜브에서 노래 조회수 크롤링
-    'streaming_site_list.youtube_music', # 유튜브 뮤직에서 노래 조회수 크롤링
-    'streaming_site_list.genie', # 지니에서 노래 조회수 크롤링
-
-    # Framework
-    'rest_framework', # DRF
+    'streaming_site_list', # 크롤링 결과 저장
+    'streaming_site_list.youtube', # 유튜브 노래 조회수 크롤링
+    'streaming_site_list.youtube_music', # 유튜브 뮤직 노래 조회수 크롤링
+    'streaming_site_list.genie', # 지니 노래 조회수 크롤링
 
     # Celery Beat
     'django_celery_beat',
-
-    # Swagger
-    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -64,8 +54,6 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -80,8 +68,6 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
