@@ -11,161 +11,116 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def save_genie_to_db(data):
+def save_genie_to_db(results):
     """
-    Genie 크롤링 데이터를 DB에 저장
+    Genie 크롤링 결과를 DB에 저장
     
     Args:
-        data (list): 저장할 데이터 리스트
-    
+        results (list): 크롤링 결과 리스트
+        
     Returns:
         int: 저장된 레코드 수
     """
-    if not data:
-        logger.warning("저장할 데이터가 없습니다.")
+    if not results:
         return 0
     
     saved_count = 0
     
-    try:
-        with transaction.atomic():
-            for item in data:
-                # view_count 정보 처리
-                view_count = item.get('view_count', {})
+    for result in results:
+        try:
+            view_count = result.get('view_count', {})
+            if isinstance(view_count, dict):
+                total_person_count = view_count.get('total_person_count', 0)
+                total_play_count = view_count.get('total_play_count', 0)
+            else:
                 total_person_count = 0
                 total_play_count = 0
-                
-                if isinstance(view_count, dict):
-                    total_person_count = view_count.get('total_person_count', 0)
-                    total_play_count = view_count.get('total_play_count', 0)
-                
-                # 중복 체크 (song_name과 artist_name으로 체크)
-                crawl_date = datetime.strptime(item['crawl_date'], CommonSettings.DATE_FORMAT).date()
-                existing = GenieSongViewCount.objects.filter(
-                    song_name=item['song_title'],
-                    artist_name=item['artist_name'],
-                    extracted_date=crawl_date
-                ).first()
-                
-                if not existing:
-                    GenieSongViewCount.objects.create(
-                        song_name=item['song_title'],
-                        artist_name=item['artist_name'],
-                        total_person_count=total_person_count,
-                        total_play_count=total_play_count,
-                        extracted_date=crawl_date
-                    )
-                    saved_count += 1
-                else:
-                    logger.debug(f"중복 데이터 스킵: {item['song_title']} - {item['artist_name']}")
-        
-        logger.info(f"✅ Genie DB 저장 완료: {saved_count}개 레코드")
-        return saved_count
-        
-    except Exception as e:
-        logger.error(f"❌ Genie DB 저장 실패: {e}", exc_info=True)
-        return 0
+            
+            GenieSongViewCount.objects.update_or_create(
+                song_name=result.get('song_title'),
+                artist_name=result.get('artist_name'),
+                defaults={
+                    'total_person_count': total_person_count,
+                    'total_play_count': total_play_count,
+                    'extracted_date': result.get('crawl_date')
+                }
+            )
+            saved_count += 1
+            logger.debug(f"✅ Genie DB 저장 완료: {result.get('song_title')} - {result.get('artist_name')}")
+            
+        except Exception as e:
+            logger.error(f"❌ Genie DB 저장 실패: {result} - {e}")
+    
+    logger.info(f"✅ Genie DB 저장 완료: {saved_count}개 레코드")
+    return saved_count
 
-def save_youtube_music_to_db(data):
+def save_youtube_music_to_db(results):
     """
-    YouTube Music 크롤링 데이터를 DB에 저장
+    YouTube Music 크롤링 결과를 DB에 저장
     
     Args:
-        data (list): 저장할 데이터 리스트
-    
+        results (list): 크롤링 결과 리스트
+        
     Returns:
         int: 저장된 레코드 수
     """
-    if not data:
-        logger.warning("저장할 데이터가 없습니다.")
+    if not results:
         return 0
     
     saved_count = 0
     
-    try:
-        with transaction.atomic():
-            for item in data:
-                # 중복 체크 (song_name과 artist_name으로 체크)
-                crawl_date = datetime.strptime(item['crawl_date'], CommonSettings.DATE_FORMAT).date()
-                existing = YouTubeMusicSongViewCount.objects.filter(
-                    song_name=item['song_title'],
-                    artist_name=item['artist_name'],
-                    extracted_date=crawl_date
-                ).first()
-                
-                if not existing:
-                    YouTubeMusicSongViewCount.objects.create(
-                        song_name=item['song_title'],
-                        artist_name=item['artist_name'],
-                        view_count=item['view_count'],
-                        extracted_date=crawl_date
-                    )
-                    saved_count += 1
-                else:
-                    logger.debug(f"중복 데이터 스킵: {item['song_title']} - {item['artist_name']}")
-        
-        logger.info(f"✅ YouTube Music DB 저장 완료: {saved_count}개 레코드")
-        return saved_count
-        
-    except Exception as e:
-        logger.error(f"❌ YouTube Music DB 저장 실패: {e}", exc_info=True)
-        return 0
+    for result in results:
+        try:
+            YouTubeMusicSongViewCount.objects.update_or_create(
+                song_name=result.get('song_title'),
+                artist_name=result.get('artist_name'),
+                defaults={
+                    'view_count': result.get('view_count'),
+                    'extracted_date': result.get('crawl_date')
+                }
+            )
+            saved_count += 1
+            logger.debug(f"✅ YouTube Music DB 저장 완료: {result.get('song_title')} - {result.get('artist_name')}")
+            
+        except Exception as e:
+            logger.error(f"❌ YouTube Music DB 저장 실패: {result} - {e}")
+    
+    logger.info(f"✅ YouTube Music DB 저장 완료: {saved_count}개 레코드")
+    return saved_count
 
-def save_youtube_to_db(data):
+def save_youtube_to_db(results):
     """
-    YouTube 크롤링 데이터를 DB에 저장
+    YouTube 크롤링 결과를 DB에 저장
     
     Args:
-        data (list): 저장할 데이터 리스트
-    
+        results (dict): 크롤링 결과 딕셔너리
+        
     Returns:
         int: 저장된 레코드 수
     """
-    if not data:
-        logger.warning("저장할 데이터가 없습니다.")
+    if not results:
         return 0
     
     saved_count = 0
     
-    try:
-        with transaction.atomic():
-            for item in data:
-                # 중복 체크 (song_name과 youtube_url로 체크)
-                crawl_date = datetime.strptime(item['crawl_date'], CommonSettings.DATE_FORMAT).date()
-                existing = YouTubeSongViewCount.objects.filter(
-                    song_name=item['song_title'],
-                    youtube_url=item.get('youtube_url', ''),
-                    extracted_date=crawl_date
-                ).first()
-                
-                if not existing:
-                    # song_id 생성 (YouTube URL에서 비디오 ID 추출)
-                    youtube_url = item.get('youtube_url', '')
-                    song_id = youtube_url.split('v=')[-1].split('&')[0] if 'v=' in youtube_url else ''
-                    
-                    # upload_date 처리
-                    upload_date = None
-                    if item.get('upload_date'):
-                        try:
-                            upload_date = datetime.strptime(item['upload_date'], '%Y.%m.%d').date()
-                        except ValueError:
-                            upload_date = crawl_date
-                    
-                    YouTubeSongViewCount.objects.create(
-                        song_id=song_id,
-                        song_name=item['song_title'],
-                        view_count=item['view_count'],
-                        youtube_url=youtube_url,
-                        extracted_date=crawl_date,
-                        upload_date=upload_date or crawl_date
-                    )
-                    saved_count += 1
-                else:
-                    logger.debug(f"중복 데이터 스킵: {item['song_title']} - {item.get('youtube_url', '')}")
-        
-        logger.info(f"✅ YouTube DB 저장 완료: {saved_count}개 레코드")
-        return saved_count
-        
-    except Exception as e:
-        logger.error(f"❌ YouTube DB 저장 실패: {e}", exc_info=True)
-        return 0 
+    for song_id, result in results.items():
+        try:
+            YouTubeSongViewCount.objects.update_or_create(
+                song_id=song_id,
+                defaults={
+                    'song_name': result.get('song_name'),
+                    'artist_name': result.get('artist_name'),
+                    'view_count': result.get('view_count'),
+                    'youtube_url': result.get('youtube_url'),
+                    'upload_date': result.get('upload_date'),
+                    'extracted_date': result.get('extracted_date')
+                }
+            )
+            saved_count += 1
+            logger.debug(f"✅ YouTube DB 저장 완료: {result.get('song_name')} - {result.get('artist_name')}")
+            
+        except Exception as e:
+            logger.error(f"❌ YouTube DB 저장 실패: {result} - {e}")
+    
+    logger.info(f"✅ YouTube DB 저장 완료: {saved_count}개 레코드")
+    return saved_count 

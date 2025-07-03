@@ -5,24 +5,28 @@
 # Genie 관련 셀렉터
 class GenieSelectors:
     # 검색 관련
-    SEARCH_INPUT = [
-        'input#sc-fd',
-        'input#input',
-        'input[aria-label="검색"]'
-    ]
-    SONG_INFO_BUTTON = 'a.btn-basic.btn-info[onclick^="fnViewSongInfo"]'
+    SEARCH_INPUT = "input[type='search']"
+    SEARCH_BUTTON = "button[type='submit']"
+    SONG_ITEMS = "tr.list__item"
+    SONG_TITLE = "a.link__text"
+    ARTIST_NAME = "a.link__text"
+    ARTIST_LINK = "td.info a.link__text"
+    PLAY_COUNT = "span.count__text"
+    PERSON_COUNT = "span.count__text"
+    VIEW_COUNT_CONTAINER = "td.count"
     
-    # 곡 정보 추출 관련
-    SONG_TITLE = 'h2.name'
-    ARTIST_INFO = 'ul.info-data li:nth-of-type(1) span.value'
-    TOTAL_STATS = 'div.total'
-    TOTAL_STATS_PARAGRAPHS = 'p'
+    # 검색 결과 테이블 관련
+    SEARCH_RESULTS_TABLE = "table.list-wrap"
+    RESULT_ROWS = "tr.list__item"
+    TITLE_COLUMN = "td.info"
+    ARTIST_COLUMN = "td.info"
+    COUNT_COLUMN = "td.count"
 
 # YouTube Music 관련 셀렉터
 class YouTubeMusicSelectors:
     # 검색 관련
     SEARCH_BUTTON = [
-        'button#button[aria-label="검색 시작"]', 
+        'button#button[aria-label="검색 시작"]',
         'button[aria-label="검색"]'
     ]
     SEARCH_INPUT = [
@@ -74,6 +78,27 @@ class CommonSettings:
     RANDOM_DELAY_MIN = 0.7
     RANDOM_DELAY_MAX = 1.5
     
+    # Chrome 드라이버 옵션
+    CHROME_OPTIONS = [
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-blink-features=AutomationControlled',
+        '--window-size=1920,1080',
+        '--start-maximized',
+        '--disable-extensions',
+        '--disable-popup-blocking',
+        '--disable-notifications',
+        '--lang=ko_KR',
+        '--log-level=3',
+        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ]
+    
+    CHROME_EXPERIMENTAL_OPTIONS = {
+        "excludeSwitches": ["enable-automation"],
+        "useAutomationExtension": False
+    }
+
 # 파일명 정리용 정규식
 INVALID_FILENAME_CHARS = r'[\\/:*?"<>|]'
 
@@ -82,3 +107,13 @@ class GenieSettings:
     MAX_SEARCH_ATTEMPTS = 5
     MAX_PARSE_ATTEMPTS = 6
     BASE_URL = "https://www.genie.co.kr/" 
+
+class FilePaths:
+    """파일 경로 상수"""
+    CSV_BASE_DIR = "csv_folder"
+    LOG_DIR = "logs"
+    
+    # CSV 파일 컬럼
+    GENIE_COLUMNS = ['song_title', 'artist_name', 'total_person_count', 'total_play_count', 'crawl_date']
+    YOUTUBE_MUSIC_COLUMNS = ['song_title', 'artist_name', 'view_count', 'crawl_date']
+    YOUTUBE_COLUMNS = ['song_id', 'song_title', 'artist_name', 'view_count', 'youtube_url', 'upload_date', 'crawl_date'] 

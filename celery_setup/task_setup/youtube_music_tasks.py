@@ -1,10 +1,5 @@
 from celery import shared_task
-from crawling_view.youtube_music_crawler_views import (
-    YouTubeMusicSearchSong,
-    YouTubeMusicSongCrawler,
-    save_each_to_csv,
-    save_to_db)
-
+from crawling_view.youtube_music.youtube_music_main import run_youtube_music_crawling
 from user_id_and_password import youtube_music_id, youtube_music_password
 import logging
 
@@ -46,19 +41,23 @@ class rhoonart_songs:
 
     @staticmethod
     def crawl_artist(artist_name, song_names):
-        search_song = YouTubeMusicSearchSong(youtube_music_id, youtube_music_password)
-        company_name = "rhoonart" # 회사명
-        artist_song_list = [(artist_name, song) for song in song_names] # 아티스트명, 곡명 리스트
-        search_results = search_song.search_multiple(artist_song_list) # 검색 결과
-        html_list = [item['html'] for item in search_results] # 검색 결과에서 html 추출
-        result_list = YouTubeMusicSongCrawler.extract_song_info_list(html_list, artist_song_list) # 곡 정보 추출    
-        logger.info(f"YouTubeMusicSongCrawler result: {result_list}")
-
-        save_to_db({info['song_name']: info for info in result_list}) # DB 저장
-        logger.info("✅ DB 저장 완료")
-        filepaths = save_each_to_csv({info['song_name']: info for info in result_list}, company_name, 'youtube_music') # CSV 저장
-        logger.info(f"✅ CSV 저장 완료: {filepaths}")
-        return result_list
+        # 새로운 구조에 맞게 데이터 변환
+        song_list = [
+            {'song_title': song, 'artist_name': artist_name}
+            for song in song_names
+        ]
+        
+        # 새로운 크롤링 함수 호출
+        results = run_youtube_music_crawling(
+            song_list, 
+            youtube_music_id, 
+            youtube_music_password, 
+            save_csv=True, 
+            save_db=True
+        )
+        
+        logger.info(f"✅ YouTube Music 크롤링 완료: {len(results)}개 곡")
+        return results
 
 # ------------------------------ Jaerium ------------------------------
 @shared_task

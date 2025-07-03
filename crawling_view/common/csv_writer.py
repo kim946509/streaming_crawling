@@ -7,6 +7,9 @@ from datetime import datetime
 from .constants import CommonSettings
 from .utils import clean_filename
 import logging
+import pandas as pd
+from pathlib import Path
+from .constants import FilePaths
 
 logger = logging.getLogger(__name__)
 
@@ -62,39 +65,178 @@ def save_to_csv(data, filename_prefix, headers=None):
         logger.error(f"❌ CSV 파일 저장 실패: {e}", exc_info=True)
         return None
 
-def save_genie_csv(data):
-    """Genie 크롤링 데이터를 CSV로 저장"""
-    # 데이터 변환 (view_count를 분리)
-    csv_data = []
-    for item in data:
-        view_count = item.get('view_count', {})
-        if isinstance(view_count, dict):
-            csv_row = {
-                'song_title': item['song_title'],
-                'artist_name': item['artist_name'],
-                'total_person_count': view_count.get('total_person_count', 0),
-                'total_play_count': view_count.get('total_play_count', 0),
-                'crawl_date': item['crawl_date']
-            }
-        else:
-            csv_row = {
-                'song_title': item['song_title'],
-                'artist_name': item['artist_name'],
-                'total_person_count': 0,
-                'total_play_count': 0,
-                'crawl_date': item['crawl_date']
-            }
-        csv_data.append(csv_row)
+def _create_directory(company_name, service_name):
+    """
+    CSV 저장용 디렉토리 생성
     
-    headers = ['song_title', 'artist_name', 'total_person_count', 'total_play_count', 'crawl_date']
-    return save_to_csv(csv_data, 'genie_crawling', headers)
+    Args:
+        company_name (str): 회사명
+        service_name (str): 서비스명
+        
+    Returns:
+        Path: 생성된 디렉토리 경로
+    """
+    dir_path = Path(FilePaths.CSV_BASE_DIR) / company_name / service_name
+    dir_path.mkdir(parents=True, exist_ok=True)
+    logger.info(f"✅ {company_name} 하위에 {service_name} 폴더 생성 완료")
+    return dir_path
 
-def save_youtube_music_csv(data):
-    """YouTube Music 크롤링 데이터를 CSV로 저장"""
-    headers = ['song_title', 'artist_name', 'view_count', 'crawl_date']
-    return save_to_csv(data, 'youtube_music_crawling', headers)
+def save_genie_csv(results, company_name="rhoonart"):
+    """
+    Genie 크롤링 결과를 CSV로 저장
+    
+    Args:
+        results (list): 크롤링 결과 리스트
+        company_name (str): 회사명
+        
+    Returns:
+        list: 저장된 파일 경로 리스트
+    """
+    if not results:
+        return []
+    
+    csv_dir = _create_directory(company_name, 'genie')
+    saved_files = []
+    
+    for result in results:
+        song_title = result.get('song_title', 'unknown')
+        
+        # 파일명 정리
+        filename = f"{clean_filename(song_title)}.csv"
+        filepath = csv_dir / filename
+        
+        # DataFrame 생성
+        df = pd.DataFrame([{
+            'song_title': result.get('song_title'),
+            'artist_name': result.get('artist_name'),
+            'total_person_count': result.get('view_count', {}).get('total_person_count') if isinstance(result.get('view_count'), dict) else None,
+            'total_play_count': result.get('view_count', {}).get('total_play_count') if isinstance(result.get('view_count'), dict) else None,
+            'crawl_date': result.get('crawl_date')
+        }])
+        
+        # 기존 파일이 있으면 누적
+        if filepath.exists():
+            try:
+                old_df = pd.read_csv(filepath)
+                combined_df = pd.concat([old_df, df], ignore_index=True)
+            except Exception as e:
+                logger.error(f"❌ 기존 CSV 읽기 실패: {filepath} - {e}")
+                combined_df = df
+        else:
+            combined_df = df
+        
+        # 날짜순 정렬 후 저장
+        combined_df = combined_df.sort_values(by="crawl_date", ascending=False)
+        combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        
+        saved_files.append(str(filepath))
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+    
+    return saved_files
 
-def save_youtube_csv(data):
-    """YouTube 크롤링 데이터를 CSV로 저장"""
-    headers = ['song_title', 'artist_name', 'view_count', 'upload_date', 'crawl_date']
-    return save_to_csv(data, 'youtube_crawling', headers) 
+def save_youtube_music_csv(results, company_name="rhoonart"):
+    """
+    YouTube Music 크롤링 결과를 CSV로 저장
+    
+    Args:
+        results (list): 크롤링 결과 리스트
+        company_name (str): 회사명
+        
+    Returns:
+        list: 저장된 파일 경로 리스트
+    """
+    if not results:
+        return []
+    
+    csv_dir = _create_directory(company_name, 'youtube_music')
+    saved_files = []
+    
+    for result in results:
+        song_title = result.get('song_title', 'unknown')
+        
+        # 파일명 정리
+        filename = f"{clean_filename(song_title)}.csv"
+        filepath = csv_dir / filename
+        
+        # DataFrame 생성
+        df = pd.DataFrame([{
+            'song_title': result.get('song_title'),
+            'artist_name': result.get('artist_name'),
+            'view_count': result.get('view_count'),
+            'crawl_date': result.get('crawl_date')
+        }])
+        
+        # 기존 파일이 있으면 누적
+        if filepath.exists():
+            try:
+                old_df = pd.read_csv(filepath)
+                combined_df = pd.concat([old_df, df], ignore_index=True)
+            except Exception as e:
+                logger.error(f"❌ 기존 CSV 읽기 실패: {filepath} - {e}")
+                combined_df = df
+        else:
+            combined_df = df
+        
+        # 날짜순 정렬 후 저장
+        combined_df = combined_df.sort_values(by="crawl_date", ascending=False)
+        combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        
+        saved_files.append(str(filepath))
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+    
+    return saved_files
+
+def save_youtube_csv(results, company_name="rhoonart"):
+    """
+    YouTube 크롤링 결과를 CSV로 저장
+    
+    Args:
+        results (dict): 크롤링 결과 딕셔너리
+        company_name (str): 회사명
+        
+    Returns:
+        list: 저장된 파일 경로 리스트
+    """
+    if not results:
+        return []
+    
+    csv_dir = _create_directory(company_name, 'youtube')
+    saved_files = []
+    
+    for song_id, result in results.items():
+        song_title = result.get('song_name', 'unknown')
+        
+        # 파일명 정리
+        filename = f"{clean_filename(song_title)}.csv"
+        filepath = csv_dir / filename
+        
+        # DataFrame 생성
+        df = pd.DataFrame([{
+            'song_id': song_id,
+            'song_title': result.get('song_name'),
+            'artist_name': result.get('artist_name'),
+            'view_count': result.get('view_count'),
+            'youtube_url': result.get('youtube_url'),
+            'upload_date': result.get('upload_date'),
+            'crawl_date': result.get('extracted_date')
+        }])
+        
+        # 기존 파일이 있으면 누적
+        if filepath.exists():
+            try:
+                old_df = pd.read_csv(filepath)
+                combined_df = pd.concat([old_df, df], ignore_index=True)
+            except Exception as e:
+                logger.error(f"❌ 기존 CSV 읽기 실패: {filepath} - {e}")
+                combined_df = df
+        else:
+            combined_df = df
+        
+        # 날짜순 정렬 후 저장
+        combined_df = combined_df.sort_values(by="crawl_date", ascending=False)
+        combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        
+        saved_files.append(str(filepath))
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+    
+    return saved_files 

@@ -11,14 +11,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 def normalize_text(text):
-    """특수문자와 공백을 정규화"""
+    """
+    텍스트 정규화 함수
+    - 유니코드 정규화
+    - 아포스트로피 통일
+    - 공백 정규화 및 소문자 변환
+    
+    Args:
+        text (str): 정규화할 텍스트
+        
+    Returns:
+        str: 정규화된 텍스트
+    """
     if not text:
         return ''
     
-    # 유니코드 정규화
+    # 유니코드 정규화 (아포스트로피, 따옴표 등을 통일)
     text = unicodedata.normalize('NFKC', text)
     
-    # 다양한 아포스트로피를 표준 아포스트로피로 통일
+    # 모든 아포스트로피를 ' 로 통일
     text = text.replace('\u2018', "'").replace('\u2019', "'").replace('\u0060', "'").replace('\u00B4', "'")
     
     # 공백 정규화 및 소문자 변환
@@ -29,21 +40,47 @@ def normalize_song_name(text):
     return re.sub(r'[\W_]+', '', text).lower() if text else ''
 
 def clean_filename(filename):
-    """파일명에 사용할 수 없는 문자 제거"""
+    """
+    파일명에 사용할 수 없는 문자를 제거하고 정리
+    
+    Args:
+        filename (str): 정리할 파일명
+        
+    Returns:
+        str: 정리된 파일명
+    """
     if not filename:
         return 'unknown'
     
-    # 특수문자 제거 및 공백을 언더바로 변환
-    clean_name = re.sub(INVALID_FILENAME_CHARS, '', filename)
-    clean_name = clean_name.replace(' ', '_')
+    # 파일명에 사용할 수 없는 문자 제거
+    filename = re.sub(r'[\\/:*?"<>|]', '', filename)
     
-    return clean_name if clean_name else 'unknown'
+    # 공백을 언더바로 변환
+    filename = filename.replace(' ', '_')
+    
+    # 빈 문자열이면 기본값 반환
+    if not filename:
+        return 'unknown'
+    
+    return filename
 
 def make_soup(html):
-    """HTML을 BeautifulSoup 객체로 변환"""
-    if not html:
+    """
+    HTML 문자열을 BeautifulSoup 객체로 변환
+    
+    Args:
+        html (str): HTML 문자열
+        
+    Returns:
+        BeautifulSoup: BeautifulSoup 객체 또는 None
+    """
+    try:
+        if not html:
+            return None
+        return BeautifulSoup(html, 'html.parser')
+    except Exception as e:
+        logger.error(f"❌ HTML 파싱 실패: {e}")
         return None
-    return BeautifulSoup(html, 'html.parser')
 
 def parse_date(date_text):
     """날짜 텍스트를 표준 형식으로 변환"""
@@ -59,13 +96,23 @@ def parse_date(date_text):
     return date_text.strip()
 
 def get_current_timestamp():
-    """현재 시간을 표준 형식으로 반환"""
-    return datetime.now().strftime(CommonSettings.DATE_FORMAT)
+    """
+    현재 시간을 '%Y-%m-%d %H:%M:%S' 형식으로 반환
+    
+    Returns:
+        str: 현재 시간 문자열
+    """
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 def convert_view_count(view_count_text):
     """
     조회수 텍스트를 숫자로 변환
-    예: "1.5만 회" -> 15000, "2.3천 회" -> 2300, "1,234회" -> 1234, "9회" -> 9
+    
+    Args:
+        view_count_text (str): 조회수 텍스트 (예: "1.5만 회", "2.3천 회", "1,234회")
+        
+    Returns:
+        int: 변환된 숫자 또는 None
     """
     if not view_count_text:
         return None
@@ -86,7 +133,7 @@ def convert_view_count(view_count_text):
         else:
             return int(view_count_text)
     except (ValueError, TypeError):
-        logger.error(f"조회수 변환 실패: {view_count_text}")
+        logger.error(f"❌ 조회수 변환 실패: {view_count_text}")
         return None
 
 def find_with_selectors(soup, selectors, get_text=True):
