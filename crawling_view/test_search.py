@@ -84,7 +84,7 @@ def test_anonatsue_youtube_music():
 '''===================== 지니 테스트(jaerium) ====================='''
 def test_genie_jaerium():
     search_song_genie = GenieSearchSong()
-    artist_name = "제이리움"
+    artist_name = "Jaerium"
     company_name = "rhoonart"
     song_names = [
         "Beneath the Frozen Sky",
@@ -151,37 +151,41 @@ def test_genie_anonatsue():
 '''===================== 유튜브 테스트 ====================='''
 def test_youtube():
     company_name = "rhoonart"
+    artist_name = "Jaerium"
     song_urls = [
         "https://www.youtube.com/watch?v=Sv2mIvMwrSY",
         "https://www.youtube.com/watch?v=R1CZTJ8hW0s",
         "https://www.youtube.com/watch?v=T4gsXNcF4Z0",
         "https://www.youtube.com/watch?v=-VQx4dePV5I",
         "https://www.youtube.com/watch?v=ecTQx5JNZBA",
-        "https://www.youtube.com/watch?v=NiTwT05VgPA",
-        "https://www.youtube.com/watch?v=nZpOGr1C8es",
-        "https://www.youtube.com/watch?v=xpSJnLMCRxc",
-        "https://www.youtube.com/watch?v=6hhhleiuaJA",
-        "https://www.youtube.com/watch?v=jKY7pm7xlLk",
-        "https://www.youtube.com/watch?v=C36Y5fmPnrQ",
-        "https://www.youtube.com/watch?v=cpfFpC5xrrY",
-        "https://www.youtube.com/watch?v=TlkHKmjha3U",
-        "https://www.youtube.com/watch?v=M1MFK5rWUpU",
-        "https://www.youtube.com/watch?v=LDJAuOW-_-4",
-        "https://www.youtube.com/watch?v=z7WJw6SY0m0",
-        "https://www.youtube.com/watch?v=2r0Wh1uEiuE",
-        "https://www.youtube.com/watch?v=R6VH1qB-Hlg",
-        "https://www.youtube.com/watch?v=HSUgcYisbmw",
-        "https://www.youtube.com/watch?v=fi-QYKZP1d0",
-        "https://www.youtube.com/watch?v=uIcpEprBKUA",
-        "https://www.youtube.com/watch?v=r8clc_Vwahs",
-        "https://www.youtube.com/watch?v=jn__gJ-7-vE",
-        "https://www.youtube.com/watch?v=61yiWvXwB74",
-        "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
+        # "https://www.youtube.com/watch?v=NiTwT05VgPA",
+        # "https://www.youtube.com/watch?v=nZpOGr1C8es",
+        # "https://www.youtube.com/watch?v=xpSJnLMCRxc",
+        # "https://www.youtube.com/watch?v=6hhhleiuaJA",
+        # "https://www.youtube.com/watch?v=jKY7pm7xlLk",
+        # "https://www.youtube.com/watch?v=C36Y5fmPnrQ",
+        # "https://www.youtube.com/watch?v=cpfFpC5xrrY",
+        # "https://www.youtube.com/watch?v=TlkHKmjha3U",
+        # "https://www.youtube.com/watch?v=M1MFK5rWUpU",
+        # "https://www.youtube.com/watch?v=LDJAuOW-_-4",
+        # "https://www.youtube.com/watch?v=z7WJw6SY0m0",
+        # "https://www.youtube.com/watch?v=2r0Wh1uEiuE",
+        # "https://www.youtube.com/watch?v=R6VH1qB-Hlg",
+        # "https://www.youtube.com/watch?v=HSUgcYisbmw",
+        # "https://www.youtube.com/watch?v=fi-QYKZP1d0",
+        # "https://www.youtube.com/watch?v=uIcpEprBKUA",
+        # "https://www.youtube.com/watch?v=r8clc_Vwahs",
+        # "https://www.youtube.com/watch?v=jn__gJ-7-vE",
+        # "https://www.youtube.com/watch?v=61yiWvXwB74",
+        # "https://www.youtube.com/watch?v=Dz8dI9G-kMk"
     ]
-    results = YouTubeSongCrawler(song_urls)
+     # URL과 artist_name을 함께 전달
+    url_artist_list = [(url, artist_name) for url in song_urls]
+    results = YouTubeSongCrawler(url_artist_list)
+  
     logging.info(f"[🖤 YouTube] 크롤링 곡 개수: {len(results)}개")
     for song_id, info in results.items():
-        print(f"[YouTube] 곡명: {info['song_name']}, 조회수: {info['view_count']}, URL: {info['youtube_url']}, 업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
+        print(f"[YouTube] 아티스트: {info['artist_name']}, 곡명: {info['song_name']}, 조회수: {info['view_count']}, URL: {info['youtube_url']}, 업로드일: {info['upload_date']}, 추출일: {info['extracted_date']}")
     filepaths = save_each_to_csv_youtube(results, company_name, 'youtube')
     print("저장된 파일 경로:")
     for song, path in filepaths.items():
@@ -190,8 +194,8 @@ def test_youtube():
 
 
 if __name__ == "__main__":
-    print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
-    test_jaerium_youtube_music()
+    # print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
+    # test_jaerium_youtube_music()
     # print("\n===== YouTubeMusic(Anonatsue) 테스트 =====")
     # test_anonatsue_youtube_music()
 
@@ -200,5 +204,5 @@ if __name__ == "__main__":
     # print("\n===== Genie(Anonatsue) 테스트 =====")
     # test_genie_anonatsue()
 
-    # print("\n===== YouTube 테스트 =====")
-    # test_youtube()
+    print("\n===== YouTube 테스트 =====")
+    test_youtube()
