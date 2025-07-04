@@ -94,13 +94,14 @@ class YouTubeMusicCrawler:
             logger.error(f"❌ YouTube Music 로그인 실패: {e}", exc_info=True)
             return False
     
-    def crawl_song(self, song_title, artist_name):
+    def crawl_song(self, song_title, artist_name, song_id=None):
         """
         단일 곡 크롤링
         
         Args:
             song_title (str): 곡 제목
             artist_name (str): 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 크롤링 결과 또는 None
@@ -116,7 +117,7 @@ class YouTubeMusicCrawler:
                 return None
             
             # 파싱 실행
-            result = self._parse_song_info(html, song_title, artist_name)
+            result = self._parse_song_info(html, song_title, artist_name, song_id)
             return result
             
         except Exception as e:
@@ -214,7 +215,7 @@ class YouTubeMusicCrawler:
                 continue
         return None
     
-    def _parse_song_info(self, html, target_song, target_artist):
+    def _parse_song_info(self, html, target_song, target_artist, song_id=None):
         """
         검색 결과 HTML 파싱
         
@@ -222,6 +223,7 @@ class YouTubeMusicCrawler:
             html (str): 검색 결과 HTML
             target_song (str): 검색한 곡명
             target_artist (str): 검색한 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 파싱된 곡 정보 또는 None
@@ -260,7 +262,8 @@ class YouTubeMusicCrawler:
                             'song_title': song_title,
                             'artist_name': artist_name,
                             'view_count': convert_view_count(view_count),
-                            'crawl_date': get_current_timestamp()
+                            'crawl_date': get_current_timestamp(),
+                            'song_id': song_id
                         }
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result

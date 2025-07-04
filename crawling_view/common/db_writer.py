@@ -39,11 +39,16 @@ def _validate_and_clean_data(data, platform):
         view_count = 0
         logger.warning(f"⚠️ {platform} 조회수 데이터가 None: song_id={song_id}")
     
-    try:
-        view_count = int(view_count) if view_count else 0
-    except (ValueError, TypeError):
-        view_count = 0
-        logger.warning(f"⚠️ {platform} 조회수 변환 실패: song_id={song_id}")
+    # 딕셔너리인 경우 (Genie 전용 데이터) 변환하지 않음
+    if isinstance(view_count, dict):
+        pass  # 딕셔너리 형태는 그대로 두고 개별 저장 함수에서 처리
+    else:
+        try:
+            view_count = int(view_count) if view_count else 0
+        except (ValueError, TypeError):
+            original_view_count = view_count  # 원래 값 보존
+            view_count = 0
+            logger.warning(f"⚠️ {platform} 조회수 변환 실패: song_id={song_id}, 원래값={original_view_count} (type: {type(original_view_count)}), 변환후=0")
     
     # 추출 날짜 처리
     extracted_date = data.get('extracted_date') or data.get('crawl_date')
@@ -105,23 +110,13 @@ def save_genie_to_db(results):
     
     for result in results:
         try:
-            # SongInfo ID 조회
-            song_name = result.get('song_name') or result.get('song_title')
-            artist_name = result.get('artist_name')
+            # song_id가 있는지 확인
+            song_id = result.get('song_id')
             
-            if not song_name or not artist_name:
-                logger.warning(f"❌ 필수 정보 누락: artist_name={artist_name}, song_name={song_name}")
-                skipped_count += 1
-                continue
-                
-            # 기존 SongInfo에서 ID 조회
-            song_id = get_song_info_id(artist_name, song_name)
             if not song_id:
-                logger.warning(f"❌ SongInfo를 찾을 수 없음: {artist_name} - {song_name}")
+                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
                 skipped_count += 1
                 continue
-            
-            result['song_id'] = song_id
             
             # 데이터 검증 및 정리
             clean_data = _validate_and_clean_data(result, 'Genie')
@@ -175,23 +170,13 @@ def save_youtube_music_to_db(results):
     
     for result in results:
         try:
-            # SongInfo ID 조회
-            song_name = result.get('song_name') or result.get('song_title')
-            artist_name = result.get('artist_name')
+            # song_id가 있는지 확인
+            song_id = result.get('song_id')
             
-            if not song_name or not artist_name:
-                logger.warning(f"❌ 필수 정보 누락: artist_name={artist_name}, song_name={song_name}")
-                skipped_count += 1
-                continue
-                
-            # 기존 SongInfo에서 ID 조회
-            song_id = get_song_info_id(artist_name, song_name)
             if not song_id:
-                logger.warning(f"❌ SongInfo를 찾을 수 없음: {artist_name} - {song_name}")
+                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
                 skipped_count += 1
                 continue
-            
-            result['song_id'] = song_id
             
             # 데이터 검증 및 정리
             clean_data = _validate_and_clean_data(result, 'YouTube Music')
@@ -221,7 +206,7 @@ def save_youtube_to_db(results):
     YouTube 크롤링 결과를 DB에 저장
     
     Args:
-        results (dict): 크롤링 결과 딕셔너리 {video_id: data}
+        results (dict): 크롤링 결과 딕셔너리 {song_id: data}
         
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
@@ -233,25 +218,13 @@ def save_youtube_to_db(results):
     failed_count = 0
     skipped_count = 0
     
-    for video_id, result in results.items():
+    for song_id, result in results.items():
         try:
-            # SongInfo ID 조회
-            song_name = result.get('song_name') or result.get('song_title')
-            artist_name = result.get('artist_name')
-            
-            if not song_name or not artist_name:
-                logger.warning(f"❌ 필수 정보 누락: artist_name={artist_name}, song_name={song_name}")
-                skipped_count += 1
-                continue
-                
-            # 기존 SongInfo에서 ID 조회
-            song_id = get_song_info_id(artist_name, song_name)
+            # song_id가 있는지 확인
             if not song_id:
-                logger.warning(f"❌ SongInfo를 찾을 수 없음: {artist_name} - {song_name}")
+                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
                 skipped_count += 1
                 continue
-            
-            result['song_id'] = song_id
             
             # 데이터 검증 및 정리
             clean_data = _validate_and_clean_data(result, 'YouTube')
@@ -276,7 +249,6 @@ def save_youtube_to_db(results):
                 song_id=clean_data['song_id'],
                 extracted_date=clean_data['extracted_date'],
                 defaults={
-                    'video_id': video_id,
                     'view_count': clean_data['view_count'],
                     'upload_date': upload_date,
                 }

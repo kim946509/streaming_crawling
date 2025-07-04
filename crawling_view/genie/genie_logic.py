@@ -19,13 +19,14 @@ class GenieCrawler:
         self.driver = driver
         self.wait = WebDriverWait(driver, CommonSettings.DEFAULT_WAIT_TIME)
     
-    def crawl_song(self, song_title, artist_name):
+    def crawl_song(self, song_title, artist_name, song_id=None):
         """
         단일 곡 크롤링
         
         Args:
             song_title (str): 곡 제목
             artist_name (str): 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 크롤링 결과 또는 None
@@ -37,7 +38,7 @@ class GenieCrawler:
                 return None
             
             # 파싱 실행
-            result = self._parse_song_info(html, song_title, artist_name)
+            result = self._parse_song_info(html, song_title, artist_name, song_id)
             return result
             
         except Exception as e:
@@ -186,7 +187,7 @@ class GenieCrawler:
             logger.error(f"❌ 곡 정보 버튼 클릭 실패: {e}")
             return None
     
-    def _parse_song_info(self, html, target_song, target_artist):
+    def _parse_song_info(self, html, target_song, target_artist, song_id=None):
         """
         곡 정보 페이지 HTML 파싱
         
@@ -194,6 +195,7 @@ class GenieCrawler:
             html (str): 곡 정보 페이지 HTML
             target_song (str): 검색한 곡명
             target_artist (str): 검색한 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 파싱된 곡 정보 또는 None
@@ -237,7 +239,8 @@ class GenieCrawler:
                     'song_title': song_title,
                     'artist_name': artist_name,
                     'view_count': view_count,
-                    'crawl_date': get_current_timestamp()
+                    'crawl_date': get_current_timestamp(),
+                    'song_id': song_id
                 }
                 
                 logger.info(f"✅ '{song_title}' - '{artist_name}' 파싱 성공!")
