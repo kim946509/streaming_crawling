@@ -9,7 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..common.constants import YouTubeMusicSelectors, CommonSettings
-from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
+from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count, compare_song_info
 
 logger = logging.getLogger(__name__)
 
@@ -249,22 +249,12 @@ class YouTubeMusicCrawler:
                     # 조회수 추출
                     view_count = self._extract_view_count(item)
 
-                    # 디버그 로깅
-                    normalized_song = normalize_text(song_title)
-                    normalized_target = normalize_text(target_song)
-                    normalized_artist = normalize_text(artist_name)
-                    normalized_target_artist = normalize_text(target_artist)
+                    # 공통 함수를 사용하여 곡 정보 비교
+                    comparison_result = compare_song_info(song_title, artist_name, target_song, target_artist)
                     
-                    logger.debug(f"검사 중: 제목='{song_title}' → '{normalized_song}' vs '{target_song}' → '{normalized_target}'")
-                    logger.debug(f"검사 중: 아티스트='{artist_name}' → '{normalized_artist}' vs '{target_artist}' → '{normalized_target_artist}'")
-
-                    # 정규화된 문자열로 비교
-                    title_match = normalized_song == normalized_target
-                    artist_match = normalized_artist == normalized_target_artist
+                    logger.debug(f"일치 검사: 제목 일치={comparison_result['title_match']}, 아티스트 일치={comparison_result['artist_match']}")
                     
-                    logger.debug(f"일치 검사: 제목 일치={title_match}, 아티스트 일치={artist_match}")
-                    
-                    if title_match and artist_match:
+                    if comparison_result['both_match']:
                         result = {
                             'song_title': song_title,
                             'artist_name': artist_name,
@@ -274,10 +264,10 @@ class YouTubeMusicCrawler:
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
                     else:
-                        if not title_match:
-                            logger.debug(f"제목 불일치: '{normalized_song}' != '{normalized_target}'")
-                        if not artist_match:
-                            logger.debug(f"아티스트 불일치: '{normalized_artist}' != '{normalized_target_artist}'")
+                        if not comparison_result['title_match']:
+                            logger.debug(f"제목 불일치: '{comparison_result['normalized_song']}' != '{comparison_result['normalized_target_song']}'")
+                        if not comparison_result['artist_match']:
+                            logger.debug(f"아티스트 불일치: '{comparison_result['normalized_artist']}' != '{comparison_result['normalized_target_artist']}'")
 
                 except Exception as e:
                     logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")

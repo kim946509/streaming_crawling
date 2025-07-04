@@ -9,7 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..common.constants import GenieSelectors, GenieSettings, CommonSettings
-from ..common.utils import normalize_song_name, make_soup, get_current_timestamp
+from ..common.utils import make_soup, get_current_timestamp, compare_song_info
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,8 @@ class GenieCrawler:
                     search_input.send_keys(Keys.RETURN)
                     time.sleep(3)
                     
-                    # 곡 정보 페이지로 이동
-                    html = self._navigate_to_song_info()
+                    # 검색 결과에서 일치하는 곡 찾기
+                    html = self._find_and_navigate_to_matching_song(query, song_title, artist_name)
                     if html:
                         return html
                     
@@ -159,13 +159,21 @@ class GenieCrawler:
                     logger.warning("❌ 곡명 추출 실패")
                     continue
                 
-                # 곡명 검증
-                if normalize_song_name(song_title) != normalize_song_name(target_song):
-                    logger.warning(f"❌ 검색 곡명과 파싱된 곡명이 다릅니다. 검색 '{target_song}' → 파싱 '{song_title}'")
-                    continue
+                # 아티스트명 추출
+                artist_name = self._extract_artist_name(soup)
+                if not artist_name:
+                    logger.warning("❌ 아티스트명 추출 실패, 검색한 값 사용")
+                    artist_name = target_artist
                 
-                # 아티스트명은 검색한 값 사용
-                artist_name = target_artist
+                # 곡명과 아티스트명 검증 (공통 함수 사용)
+                comparison_result = compare_song_info(song_title, artist_name, target_song, target_artist)
+                
+                if not comparison_result['both_match']:
+                    if not comparison_result['title_match']:
+                        logger.warning(f"❌ 곡명 불일치: '{comparison_result['normalized_song']}' != '{comparison_result['normalized_target_song']}'")
+                    if not comparison_result['artist_match']:
+                        logger.warning(f"❌ 아티스트명 불일치: '{comparison_result['normalized_artist']}' != '{comparison_result['normalized_target_artist']}'")
+                    continue
                 
                 # 조회수 정보 추출
                 view_count = self._extract_view_count(soup)
@@ -196,6 +204,32 @@ class GenieCrawler:
             logger.info(f"✅ 곡명 추출 성공: {song_title}")
             return song_title
         return None
+    
+    def _extract_artist_name(self, soup):
+        """아티스트명 추출"""
+        try:
+            # 곡 정보 페이지에서 아티스트명 추출 시도
+            artist_selectors = [
+                'div.info-zone p.artist a',  # 곡 정보 페이지의 아티스트 링크
+                'div.info-zone p.artist',    # 곡 정보 페이지의 아티스트 텍스트
+                'p.artist a',                # 일반적인 아티스트 링크
+                'p.artist',                  # 일반적인 아티스트 텍스트
+                'a.link__text'               # 기존 검색 결과 페이지의 아티스트 링크
+            ]
+            
+            for selector in artist_selectors:
+                artist_tag = soup.select_one(selector)
+                if artist_tag:
+                    artist_name = artist_tag.text.strip()
+                    logger.info(f"✅ 아티스트명 추출 성공: {artist_name}")
+                    return artist_name
+            
+            logger.warning("❌ 아티스트명 추출 실패: 해당 selector를 찾지 못함")
+            return None
+            
+        except Exception as e:
+            logger.error(f"❌ 아티스트명 추출 실패: {e}")
+            return None
     
     def _extract_view_count(self, soup):
         """조회수 정보 추출"""
