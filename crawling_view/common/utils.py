@@ -35,52 +35,6 @@ def normalize_text(text):
     # 공백 정규화 및 소문자 변환
     return ' '.join(text.lower().split())
 
-def compare_song_info(song_title, artist_name, target_song_title, target_artist_name):
-    """
-    곡 정보 비교 함수 (YouTube Music과 동일한 정규화 로직 사용)
-    
-    Args:
-        song_title (str): 추출된 곡명
-        artist_name (str): 추출된 아티스트명
-        target_song_title (str): 검색한 곡명
-        target_artist_name (str): 검색한 아티스트명
-        
-    Returns:
-        dict: 비교 결과를 담은 딕셔너리
-            {
-                'title_match': bool,
-                'artist_match': bool,
-                'both_match': bool,
-                'normalized_song': str,
-                'normalized_target_song': str,
-                'normalized_artist': str,
-                'normalized_target_artist': str
-            }
-    """
-    # 정규화
-    normalized_song = normalize_text(song_title)
-    normalized_target_song = normalize_text(target_song_title)
-    normalized_artist = normalize_text(artist_name)
-    normalized_target_artist = normalize_text(target_artist_name)
-    
-    # 비교
-    title_match = normalized_song == normalized_target_song
-    artist_match = normalized_artist == normalized_target_artist
-    both_match = title_match and artist_match
-    
-    logger.debug(f"곡명 비교: '{song_title}' → '{normalized_song}' vs '{target_song_title}' → '{normalized_target_song}' = {title_match}")
-    logger.debug(f"아티스트 비교: '{artist_name}' → '{normalized_artist}' vs '{target_artist_name}' → '{normalized_target_artist}' = {artist_match}")
-    
-    return {
-        'title_match': title_match,
-        'artist_match': artist_match,
-        'both_match': both_match,
-        'normalized_song': normalized_song,
-        'normalized_target_song': normalized_target_song,
-        'normalized_artist': normalized_artist,
-        'normalized_target_artist': normalized_target_artist
-    }
-
 def clean_filename(filename):
     """
     파일명에 사용할 수 없는 문자를 제거하고 정리

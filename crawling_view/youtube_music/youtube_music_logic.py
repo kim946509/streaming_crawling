@@ -9,7 +9,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..common.constants import YouTubeMusicSelectors, CommonSettings
-from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count, compare_song_info
+from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
+from ..common.matching import compare_song_info
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class YouTubeMusicCrawler:
             return result
             
         except Exception as e:
-            logger.error(f"❌ 곡 크롤링 실패 ({song_title} - {artist_name}): {e}", exc_info=True)
+            logger.error(f"❌ 곡 크롤링 실패 ({artist_name} - {song_title}): {e}", exc_info=True)
             return None
     
     def _search_song(self, song_title, artist_name):

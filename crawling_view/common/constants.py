@@ -16,6 +16,16 @@ class GenieSelectors:
     SONG_INFO_BUTTON = 'a.btn-basic.btn-info[onclick^="fnViewSongInfo"]'
     SONG_TITLE = 'h2.name'  # 곡 정보 페이지의 곡명
     
+    # 아티스트명 추출 selector 리스트
+    ARTIST_SELECTORS = [
+        'a[onclick^="fnGoMore(\'artistInfo\'"]',  # 아티스트 정보 링크
+        'div.info-zone p.artist a',  # 곡 정보 페이지의 아티스트 링크
+        'div.info-zone p.artist',    # 곡 정보 페이지의 아티스트 텍스트
+        'p.artist a',                # 일반적인 아티스트 링크
+        'p.artist',                  # 일반적인 아티스트 텍스트
+        'a.link__text'               # 기존 검색 결과 페이지의 아티스트 링크
+    ]
+    
     # 곡 정보 페이지 통계 관련
     TOTAL_STATS = 'div.total'  # 통계 정보 컨테이너
     TOTAL_STATS_PARAGRAPHS = 'p'  # 통계 수치
@@ -88,8 +98,8 @@ class CommonSettings:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     CSV_ENCODING = 'utf-8-sig'
     DEFAULT_WAIT_TIME = 10
-    RANDOM_DELAY_MIN = 0.3
-    RANDOM_DELAY_MAX = 0.8
+    RANDOM_DELAY_MIN = 1.2
+    RANDOM_DELAY_MAX = 2
     
     # Chrome 드라이버 옵션
     CHROME_OPTIONS = [
