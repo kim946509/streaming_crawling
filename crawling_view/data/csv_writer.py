@@ -4,12 +4,12 @@ CSV 파일 저장 관련 함수들
 import csv
 import os
 from datetime import datetime
-from .constants import CommonSettings
-from .utils import clean_filename
+from crawling_view.utils.constants import CommonSettings
+from crawling_view.utils.utils import clean_filename
 import logging
 import pandas as pd
 from pathlib import Path
-from .constants import FilePaths
+from crawling_view.utils.constants import FilePaths
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ def save_youtube_csv(results, company_name="rhoonart"):
     YouTube 크롤링 결과를 CSV로 저장
     
     Args:
-        results (dict): 크롤링 결과 딕셔너리 {song_id: data}
+        results (dict): 크롤링 결과 딕셔너리
         company_name (str): 회사명
         
     Returns:
@@ -214,8 +214,8 @@ def save_youtube_csv(results, company_name="rhoonart"):
     csv_dir = _create_directory(company_name, 'youtube')
     saved_files = []
     
-    for song_id, result in results.items():
-        song_title = result.get('song_name', 'unknown')
+    for url, result in results.items():
+        song_title = result.get('song_title', 'unknown')
         
         # 파일명 정리
         filename = f"{clean_filename(song_title)}.csv"
@@ -223,13 +223,11 @@ def save_youtube_csv(results, company_name="rhoonart"):
         
         # DataFrame 생성
         df = pd.DataFrame([{
-            'song_id': song_id,
-            'song_title': result.get('song_name'),
+            'song_id': f"youtube_{result.get('artist_name', '')}_{song_title}".lower().replace(' ', '_'),
+            'song_title': song_title,
             'artist_name': result.get('artist_name'),
             'views': result.get('views', 0),
-            'youtube_url': result.get('youtube_url'),
-            'upload_date': result.get('upload_date'),
-            'crawl_date': result.get('extracted_date')
+            'crawl_date': result.get('crawl_date')
         }])
         
         # 기존 파일이 있으면 누적

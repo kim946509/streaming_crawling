@@ -2,13 +2,15 @@
 YouTube 크롤링 및 파싱 로직
 """
 import time
-import re
+import random
 import logging
+import re
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from ..common.constants import YouTubeSelectors, CommonSettings
-from ..common.utils import make_soup, get_current_timestamp, convert_view_count
+from crawling_view.utils.constants import YouTubeSelectors, CommonSettings
+from crawling_view.utils.utils import make_soup, get_current_timestamp, convert_view_count
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ class YouTubeCrawler:
             # 업로드 날짜 추출
             upload_date = self._extract_upload_date(soup)
 
-            # 결과 반환 (song_id는 SongInfo의 pk, video_id는 따로 저장)
+            # 결과 반환 
             return {
                 'song_id': song_id,  # SongInfo의 pk
                 'song_name': song_name,

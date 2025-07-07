@@ -4,7 +4,7 @@ DB 저장 관련 함수들
 from django.db import transaction
 from streaming_site_list.models import SongInfo, CrawlingData, PlatformType
 from datetime import datetime
-from .constants import CommonSettings
+from crawling_view.utils.constants import CommonSettings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -198,7 +198,7 @@ def save_genie_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    return _save_crawling_data(results, 'Genie', PlatformType.GENIE)
+    return _save_crawling_data(results, 'genie', PlatformType.GENIE)
 
 def save_youtube_music_to_db(results):
     """
@@ -210,18 +210,16 @@ def save_youtube_music_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    return _save_crawling_data(results, 'YouTube Music', PlatformType.YOUTUBE_MUSIC)
+    return _save_crawling_data(results, 'youtube_music', PlatformType.YOUTUBE_MUSIC)
 
 def save_youtube_to_db(results):
     """
     YouTube 크롤링 결과를 DB에 저장
     
     Args:
-        results (dict): 크롤링 결과 딕셔너리 {song_id: data}
+        results (dict): 크롤링 결과 딕셔너리
         
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    return _save_crawling_data(results, 'YouTube', PlatformType.YOUTUBE)
-
- 
+    return _save_crawling_data(results, 'youtube', PlatformType.YOUTUBE) 

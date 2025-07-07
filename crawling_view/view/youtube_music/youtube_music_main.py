@@ -1,34 +1,41 @@
 """
-Genie 크롤링 메인 실행 파일
+YouTube Music 크롤링 메인 실행 파일
 """
 import logging
-from ..common.driver import setup_driver
-from ..common.csv_writer import save_genie_csv
-from ..common.db_writer import save_genie_to_db
-from .genie_logic import GenieCrawler
+from crawling_view.utils.driver import setup_driver
+from crawling_view.data.csv_writer import save_youtube_music_csv
+from crawling_view.data.db_writer import save_youtube_music_to_db
+from .youtube_music_logic import YouTubeMusicCrawler
 
 logger = logging.getLogger(__name__)
 
-def run_genie_crawling(song_list, save_csv=True, save_db=True):
+def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_password, save_csv=True, save_db=True):
     """
-    Genie 크롤링 실행
+    YouTube Music 크롤링 실행
     
     Args:
         song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명', 'song_id': 'id'}, ...]
+        youtube_music_id (str): YouTube Music 로그인 ID
+        youtube_music_password (str): YouTube Music 로그인 비밀번호
         save_csv (bool): CSV 저장 여부
         save_db (bool): DB 저장 여부
     
     Returns:
         list: 크롤링된 데이터 리스트
     """
-    logger.info(f"🎵 Genie 크롤링 시작 - 총 {len(song_list)}곡")
+    logger.info(f"🎵 YouTube Music 크롤링 시작 - 총 {len(song_list)}곡")
     
     crawled_data = []
     
     try:
         # Chrome 드라이버 설정 및 실행
         with setup_driver() as driver:
-            crawler = GenieCrawler(driver)
+            crawler = YouTubeMusicCrawler(driver, youtube_music_id, youtube_music_password)
+            
+            # 로그인 수행
+            if not crawler.login():
+                logger.error("❌ YouTube Music 로그인 실패")
+                return []
             
             # 각 곡에 대해 크롤링 실행
             for song_info in song_list:
@@ -47,23 +54,23 @@ def run_genie_crawling(song_list, save_csv=True, save_db=True):
                 else:
                     logger.warning(f"❌ 크롤링 실패: {song_title} - {artist_name}")
         
-        logger.info(f"🎵 Genie 크롤링 완료 - 성공: {len(crawled_data)}곡")
+        logger.info(f"🎵 YouTube Music 크롤링 완료 - 성공: {len(crawled_data)}곡")
         
         # CSV 저장
         if save_csv and crawled_data:
-            csv_path = save_genie_csv(crawled_data)
+            csv_path = save_youtube_music_csv(crawled_data)
             if csv_path:
                 logger.info(f"📄 CSV 저장 완료: {csv_path}")
         
         # DB 저장
         if save_db and crawled_data:
-            saved_count = save_genie_to_db(crawled_data)
+            saved_count = save_youtube_music_to_db(crawled_data)
             logger.info(f"💾 DB 저장 완료: {saved_count}개 레코드")
         
         return crawled_data
         
     except Exception as e:
-        logger.error(f"❌ Genie 크롤링 실행 중 오류 발생: {e}", exc_info=True)
+        logger.error(f"❌ YouTube Music 크롤링 실행 중 오류 발생: {e}", exc_info=True)
         return []
 
 if __name__ == "__main__":
@@ -73,19 +80,9 @@ if __name__ == "__main__":
         {'song_title': 'How Sweet', 'artist_name': 'NewJeans'},
     ]
     
-    results = run_genie_crawling(test_songs)
-    print(f"크롤링 결과: {len(results)}곡")
-
-    # 개선 (song_id 포함)
-    active_songs = get_active_songs()
-    song_list = [
-        {
-            'song_id': song.id,
-            'song_title': song.song_name, 
-            'artist_name': song.artist_name
-        } 
-        for song in active_songs
-    ]
+    # 실제 사용 시에는 user_id_and_password에서 import
+    test_id = "your_youtube_music_id"
+    test_password = "your_youtube_music_password"
     
-    results = run_genie_crawling(song_list)
+    results = run_youtube_music_crawling(test_songs, test_id, test_password)
     print(f"크롤링 결과: {len(results)}곡") 

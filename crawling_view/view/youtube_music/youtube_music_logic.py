@@ -4,12 +4,13 @@ YouTube Music 크롤링 및 파싱 로직
 import time
 import random
 import logging
+import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from ..common.constants import YouTubeMusicSelectors, CommonSettings
-from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
+from crawling_view.utils.constants import YouTubeMusicSelectors, CommonSettings
+from crawling_view.utils.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
 
 logger = logging.getLogger(__name__)
 

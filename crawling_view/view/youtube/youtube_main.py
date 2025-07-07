@@ -2,9 +2,9 @@
 YouTube 크롤링 메인 실행 파일
 """
 import logging
-from ..common.driver import setup_driver
-from ..common.csv_writer import save_youtube_csv
-from ..common.db_writer import save_youtube_to_db
+from crawling_view.utils.driver import setup_driver
+from crawling_view.data.csv_writer import save_youtube_csv
+from crawling_view.data.db_writer import save_youtube_to_db
 from .youtube_logic import YouTubeCrawler
 
 logger = logging.getLogger(__name__)

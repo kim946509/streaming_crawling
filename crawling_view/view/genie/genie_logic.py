@@ -8,9 +8,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from ..common.constants import GenieSelectors, GenieSettings, CommonSettings
-from ..common.utils import make_soup, get_current_timestamp
-from ..common.matching import compare_song_info
+from crawling_view.utils.constants import GenieSelectors, GenieSettings, CommonSettings
+from crawling_view.utils.utils import make_soup, get_current_timestamp
+from crawling_view.utils.matching import compare_song_info
 
 logger = logging.getLogger(__name__)
 
