@@ -57,7 +57,7 @@ if __name__ == "__main__":
         if isinstance(view_count, dict):
             print(f"[Genie] 곡명: {result['song_title']}, 아티스트: {result['artist_name']}, "
                   f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
-                  f"총 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"총 재생수: {view_count.get('view_count', 0)}, "
                   f"크롤링 날짜: {result['crawl_date']}")
         else:
             print(f"[Genie] 곡명: {result['song_title']}, 아티스트: {result['artist_name']}, "

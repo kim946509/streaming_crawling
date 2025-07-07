@@ -17,43 +17,22 @@ class YouTubeCrawler:
         self.driver = driver
         self.wait = WebDriverWait(driver, CommonSettings.DEFAULT_WAIT_TIME)
     
-    def crawl_multiple(self, url_artist_list):
+    def crawl_multiple(self, url_artist_song_id_list):
         """
         여러 YouTube URL을 크롤링
         
         Args:
-            url_artist_list (list): [('url', 'artist_name'), ...] 형태의 리스트
+            url_artist_song_id_list (list): [('url', 'artist_name', 'song_id'), ...] 형태의 리스트
             
         Returns:
-            dict: 크롤링 결과 딕셔너리
+            dict: 크롤링 결과 딕셔너리 {song_id: data}
         """
         results = {}
-        url_id_artist_map = {}
-
-        # 각 (url, artist_name)에서 song_id 추출
-        for url, artist_name in url_artist_list:
-            song_id = self._extract_song_id(url)
-            if song_id:
-                url_id_artist_map[song_id] = {'url': url, 'artist_name': artist_name}
-            else:
-                # 유효하지 않은 URL 처리
-                results[url] = {
-                    'song_name': None,
-                    'artist_name': artist_name,
-                    'view_count': None,
-                    'youtube_url': url,
-                    'upload_date': None,
-                    'extracted_date': get_current_timestamp(),
-                    'error': '유효하지 않은 유튜브 URL'
-                }
 
         # 각 URL 크롤링
-        for song_id, data in url_id_artist_map.items():
-            url = data['url']
-            artist_name = data['artist_name']
-            
+        for url, artist_name, song_id in url_artist_song_id_list:
             try:
-                result = self._crawl_single_video(song_id, url, artist_name)
+                result = self._crawl_single_video(url, artist_name, song_id)
                 if result:
                     results[song_id] = result
                     logger.info(f"✅ 크롤링 성공 - 아티스트: {artist_name}, 제목: {result['song_name']}, "
@@ -64,6 +43,7 @@ class YouTubeCrawler:
             except Exception as e:
                 logger.error(f"❌ {artist_name} 크롤링 실패: {e}", exc_info=True)
                 results[song_id] = {
+                    'song_id': song_id,
                     'song_name': None,
                     'artist_name': artist_name,
                     'view_count': None,
@@ -74,14 +54,14 @@ class YouTubeCrawler:
 
         return results
     
-    def _crawl_single_video(self, song_id, url, artist_name):
+    def _crawl_single_video(self, url, artist_name, song_id):
         """
         단일 YouTube 동영상 크롤링
         
         Args:
-            song_id (str): YouTube 비디오 ID
             url (str): YouTube URL
             artist_name (str): 아티스트명
+            song_id (str): SongInfo의 pk값
             
         Returns:
             dict: 크롤링 결과 또는 None
@@ -114,9 +94,9 @@ class YouTubeCrawler:
             # 업로드 날짜 추출
             upload_date = self._extract_upload_date(soup)
 
-            # 결과 반환
+            # 결과 반환 (song_id는 SongInfo의 pk, video_id는 따로 저장)
             return {
-                'song_id': song_id,
+                'song_id': song_id,  # SongInfo의 pk
                 'song_name': song_name,
                 'artist_name': artist_name,
                 'view_count': view_count,
@@ -128,22 +108,6 @@ class YouTubeCrawler:
         except Exception as e:
             logger.error(f"❌ 단일 비디오 크롤링 실패: {e}", exc_info=True)
             return None
-    
-    def _extract_song_id(self, youtube_url):
-        """
-        유튜브 URL에서 song_id 추출
-        
-        Args:
-            youtube_url (str): YouTube URL
-            
-        Returns:
-            str: 비디오 ID 또는 None
-        """
-        # 일반적인 유튜브 URL 패턴
-        match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})", youtube_url)
-        if match:
-            return match.group(1)
-        return None
     
     def _wait_for_title_load(self):
         """
