@@ -32,27 +32,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    'django.contrib.contenttypes',  # 모델 메타데이터용
+    'django.contrib.sessions',      # 세션 (크롤링 시 쿠키 관리용)
+    
     # 앱 추가
-    'streaming_site_list', # 크롤링 자동 실행 버튼
-    'streaming_site_list.youtube', # 유튜브에서 노래 조회수 크롤링
-    'streaming_site_list.youtube_music', # 유튜브 뮤직에서 노래 조회수 크롤링
-    'streaming_site_list.genie', # 지니에서 노래 조회수 크롤링
-
-    # Framework
-    'rest_framework', # DRF
-
-    # Celery Beat
-    'django_celery_beat',
-
-    # Swagger
-    'drf_yasg',
+    'streaming_site_list',          # 통합 모델만
 ]
 
 MIDDLEWARE = [
@@ -137,11 +121,3 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Celery 설정
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0' # 결과 반환
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
