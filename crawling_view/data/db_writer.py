@@ -2,7 +2,7 @@
 DB 저장 관련 함수들
 """
 from django.db import transaction
-from streaming_site_list.models import SongInfo, CrawlingData, PlatformType
+from crawling_view.models import SongInfo, CrawlingData, PlatformType
 from datetime import datetime
 from crawling_view.utils.constants import CommonSettings
 import logging

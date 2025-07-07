@@ -2,7 +2,7 @@
 크롤링 대상 곡 조회 서비스
 """
 from datetime import date
-from streaming_site_list.models import SongInfo, CrawlingPeriod
+from crawling_view.models import SongInfo, CrawlingPeriod
 import logging
 
 logger = logging.getLogger(__name__)

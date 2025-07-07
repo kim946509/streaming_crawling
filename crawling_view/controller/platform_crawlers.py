@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from crawling_view.view.genie.genie_main import run_genie_crawling
 from crawling_view.view.youtube.youtube_main import run_youtube_crawling
 from crawling_view.view.youtube_music.youtube_music_main import run_youtube_music_crawling
-from streaming_site_list.models import SongInfo
+from crawling_view.models import SongInfo
 from user_id_and_password import youtube_music_id, youtube_music_password
 
 logger = logging.getLogger(__name__)

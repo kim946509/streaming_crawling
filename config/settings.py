@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',      # 세션 (크롤링 시 쿠키 관리용)
     
     # 앱 추가
-    'streaming_site_list',          # 통합 모델만
+    'crawling_view',                # 크롤링 시스템
 ]
 
 MIDDLEWARE = [
