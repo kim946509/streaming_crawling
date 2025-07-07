@@ -53,17 +53,34 @@ def _process_numeric_field(value, field_name, platform, song_id):
         song_id (str): 곡 ID
         
     Returns:
-        int: 처리된 값 (-999: 오류, 양수: 정상값)
+        int: 처리된 값
+            - 정상값: 양수
+            - 0: 실제로 0인 경우
+            - -1: 해당 플랫폼에서 제공하지 않는 데이터
+            - -999: 크롤링 실패/오류
     """
     if value is None or value == 'None':
         logger.error(f"❌ {platform} {field_name} 데이터 누락: song_id={song_id}")
         return -999
     
     try:
-        processed_value = int(value) if value else -999
-        if processed_value == -999:
-            logger.error(f"❌ {platform} {field_name} 변환 실패: song_id={song_id}, 원래값={value}")
-        return processed_value
+        # 이미 정수인 경우 그대로 반환
+        if isinstance(value, int):
+            return value
+        
+        # 문자열인 경우 변환
+        if isinstance(value, str):
+            # 빈 문자열이나 'None' 문자열
+            if not value or value.lower() == 'none':
+                return -999
+            
+            # 쉼표 제거 후 변환
+            clean_value = value.replace(',', '')
+            return int(clean_value)
+        
+        # 기타 타입은 0으로 처리
+        return int(value) if value else -999
+        
     except (ValueError, TypeError):
         logger.error(f"❌ {platform} {field_name} 변환 실패: song_id={song_id}, 원래값={value} (type: {type(value)})")
         return -999
@@ -92,7 +109,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(genie_artist=artist_name, genie_title=song_name)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - Genie - {artist_name} - {song_name}")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
             
         elif platform == 'youtube':
             # YouTube는 URL로만 조회
@@ -102,7 +120,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(youtube_url=url)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube URL")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
                 
         elif platform == 'youtube_music':
             # YouTube Music은 artist와 title로 조회
@@ -113,7 +132,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(youtube_music_artist=artist_name, youtube_music_title=song_name)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube Music - {artist_name} - {song_name}")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
             
         else:
             logger.warning(f"❌ 지원하지 않는 플랫폼: {platform}")
@@ -179,7 +199,8 @@ def _save_crawling_data(results, platform, platform_type):
             )
             
             saved_count += 1
-            logger.debug(f"✅ {platform} DB 저장 완료: {clean_data['song_id']}")
+            # 성공한 DB 저장은 디버그 레벨로 변경
+            pass
             
         except Exception as e:
             failed_count += 1
@@ -222,4 +243,16 @@ def save_youtube_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    return _save_crawling_data(results, 'youtube', PlatformType.YOUTUBE) 
+    return _save_crawling_data(results, 'youtube', PlatformType.YOUTUBE)
+
+def save_melon_to_db(results):
+    """
+    Melon 크롤링 결과를 DB에 저장
+    
+    Args:
+        results (list): 크롤링 결과 리스트
+        
+    Returns:
+        dict: 저장 결과 (saved_count, failed_count, skipped_count)
+    """
+    return _save_crawling_data(results, 'melon', PlatformType.MELON) 

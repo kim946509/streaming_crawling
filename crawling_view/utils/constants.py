@@ -114,7 +114,16 @@ class CommonSettings:
         '--disable-notifications',
         '--lang=ko_KR',
         '--log-level=3',
-        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        '--incognito',  # 시크릿 모드로 실행 (캐시 무시)
+        '--disable-application-cache',  # 애플리케이션 캐시 비활성화
+        '--disable-cache',  # 캐시 비활성화
+        '--disable-offline-load-stale-cache',  # 오프라인 캐시 비활성화
+        '--disk-cache-size=0',  # 디스크 캐시 크기를 0으로 설정
+        '--media-cache-size=0',  # 미디어 캐시 크기를 0으로 설정
+        '--aggressive-cache-discard',  # 적극적인 캐시 삭제
+        '--memory-pressure-off',  # 메모리 압박 해제
+        '--max_old_space_size=4096'  # 메모리 제한 증가
     ]
     
     CHROME_EXPERIMENTAL_OPTIONS = {

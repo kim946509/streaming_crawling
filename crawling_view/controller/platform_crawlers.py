@@ -8,6 +8,7 @@ from typing import List, Dict, Any
 from crawling_view.view.genie.genie_main import run_genie_crawling
 from crawling_view.view.youtube.youtube_main import run_youtube_crawling
 from crawling_view.view.youtube_music.youtube_music_main import run_youtube_music_crawling
+from crawling_view.view.melon.melon_main import run_melon_crawling
 from crawling_view.models import SongInfo
 
 logger = logging.getLogger(__name__)
@@ -116,13 +117,39 @@ class YouTubeCrawler(BasePlatformCrawler):
         
         return crawling_results
 
+class MelonCrawler(BasePlatformCrawler):
+    """Melon 크롤링 클래스"""
+    
+    def __init__(self):
+        super().__init__()
+        self.platform_name = "melon"
+    
+    def crawl_songs(self, song_data: List[Dict]) -> List[Dict]:
+        """Melon 크롤링 실행"""
+        if not song_data:
+            logger.warning("⚠️ Melon 크롤링 대상 곡이 없습니다.")
+            return []
+        
+        self._log_start(len(song_data))
+        start_time = time.time()
+        
+        # 크롤링 실행 (CSV, DB 저장은 분리)
+        crawling_results = run_melon_crawling(song_data, save_csv=False, save_db=False)
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        
+        self._log_complete(elapsed_time, len(crawling_results))
+        
+        return crawling_results
+
 
 def create_crawler(platform: str):
     """
     플랫폼별 크롤러 생성
     
     Args:
-        platform: 플랫폼명 ('genie', 'youtube_music', 'youtube')
+        platform: 플랫폼명 ('genie', 'youtube_music', 'youtube', 'melon')
         
     Returns:
         BasePlatformCrawler: 해당 플랫폼의 크롤러
@@ -133,6 +160,8 @@ def create_crawler(platform: str):
         return YouTubeMusicCrawler()
     elif platform == 'youtube':
         return YouTubeCrawler()
+    elif platform == 'melon':
+        return MelonCrawler()
     else:
         raise ValueError(f"지원하지 않는 플랫폼: {platform}")
 

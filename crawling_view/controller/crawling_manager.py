@@ -9,8 +9,8 @@
 import logging
 from datetime import date
 from crawling_view.data.song_service import SongService
-from crawling_view.data.db_writer import save_genie_to_db, save_youtube_to_db, save_youtube_music_to_db
-from crawling_view.data.csv_writer import save_genie_csv, save_youtube_csv, save_youtube_music_csv
+from crawling_view.data.db_writer import save_genie_to_db, save_youtube_to_db, save_youtube_music_to_db, save_melon_to_db
+from crawling_view.data.csv_writer import save_genie_csv, save_youtube_csv, save_youtube_music_csv, save_melon_csv
 from crawling_view.controller.platform_crawlers import create_crawler
 
 logger = logging.getLogger(__name__)
@@ -70,6 +70,16 @@ def run_crawling(target_date=None):
             crawling_results['youtube'] = youtube_results
             logger.info(f"✅ YouTube 크롤링 완료: {len(youtube_results)}개 결과")
         
+        # Melon 크롤링
+        melon_songs = SongService.get_songs_by_platform(active_songs, 'melon')
+        if melon_songs:
+            logger.info(f"🍈 Melon 크롤링 시작: {len(melon_songs)}개 곡")
+            melon_crawler = create_crawler('melon')
+            melon_data = SongService.convert_to_crawling_format(melon_songs, 'melon')
+            melon_results = melon_crawler.crawl_songs(melon_data)
+            crawling_results['melon'] = melon_results
+            logger.info(f"✅ Melon 크롤링 완료: {len(melon_results)}개 결과")
+        
         # 3단계: DB 저장
         logger.info("💾 3단계: DB 저장")
         db_results = {}
@@ -83,6 +93,9 @@ def run_crawling(target_date=None):
         if 'youtube' in crawling_results:
             db_results['youtube'] = save_youtube_to_db(crawling_results['youtube'])
         
+        if 'melon' in crawling_results:
+            db_results['melon'] = save_melon_to_db(crawling_results['melon'])
+        
         # 4단계: CSV 저장
         logger.info("📄 4단계: CSV 저장")
         csv_results = {}
@@ -95,6 +108,9 @@ def run_crawling(target_date=None):
         
         if 'youtube' in crawling_results:
             csv_results['youtube'] = save_youtube_csv(crawling_results['youtube'])
+        
+        if 'melon' in crawling_results:
+            csv_results['melon'] = save_melon_csv(crawling_results['melon'])
         
         # 결과 요약
         summary = {
@@ -120,7 +136,7 @@ def run_platform_crawling(platform, target_date=None):
     특정 플랫폼만 크롤링 실행
     
     Args:
-        platform (str): 플랫폼명 ('genie', 'youtube', 'youtube_music')
+        platform (str): 플랫폼명 ('genie', 'youtube', 'youtube_music', 'melon')
         target_date (date, optional): 크롤링 대상 날짜
         
     Returns:
@@ -149,6 +165,8 @@ def run_platform_crawling(platform, target_date=None):
             db_results = save_youtube_music_to_db(crawling_results)
         elif platform == 'youtube':
             db_results = save_youtube_to_db(crawling_results)
+        elif platform == 'melon':
+            db_results = save_melon_to_db(crawling_results)
         else:
             db_results = {'error': '지원하지 않는 플랫폼'}
         
@@ -159,6 +177,8 @@ def run_platform_crawling(platform, target_date=None):
             csv_results = save_youtube_music_csv(crawling_results)
         elif platform == 'youtube':
             csv_results = save_youtube_csv(crawling_results)
+        elif platform == 'melon':
+            csv_results = save_melon_csv(crawling_results)
         else:
             csv_results = {'error': '지원하지 않는 플랫폼'}
         
