@@ -7,39 +7,34 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from contextlib import contextmanager
 import logging
+from .constants import CommonSettings
 
 logger = logging.getLogger(__name__)
 
 @contextmanager
-def setup_driver(headless=False, incognito=True):
+def setup_driver(headless=True, incognito=True):
     """
     Chrome WebDriver 설정 및 생성
     
     Args:
-        headless (bool): 헤드리스 모드 여부
+        headless (bool): 헤드리스 모드 여부 (기본값: True - 서버 환경용)
         incognito (bool): 시크릿 모드 여부
     """
     options = Options()
     
-    if headless:
-        options.add_argument('--headless')
+    # constants.py에서 정의된 모든 Chrome 옵션 적용
+    for option in CommonSettings.CHROME_OPTIONS:
+        options.add_argument(option)
     
-    # 기본 옵션들
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--window-size=1920,1080')
-    options.add_argument('--start-maximized')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-notifications')
-    options.add_argument('--lang=ko_KR')
-    options.add_argument('--log-level=3')
-    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    # 헤드리스 모드가 False인 경우 headless 옵션 제거
+    if not headless:
+        # headless 옵션을 제거
+        options.arguments = [arg for arg in options.arguments if arg != '--headless']
     
-    if incognito:
-        options.add_argument('--incognito')
+    # 시크릿 모드가 False인 경우 incognito 옵션 제거
+    if not incognito:
+        # incognito 옵션을 제거
+        options.arguments = [arg for arg in options.arguments if arg != '--incognito']
     
     # 자동화 탐지 방지
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -51,7 +46,8 @@ def setup_driver(headless=False, incognito=True):
     # 자동화 탐지 방지 스크립트
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     
-    logger.info("🟢 Chrome 브라우저 실행 완료")
+    mode = "헤드리스" if headless else "GUI"
+    logger.info(f"🟢 Chrome 브라우저 실행 완료 ({mode} 모드)")
 
     try:
         yield driver

@@ -108,7 +108,6 @@ class CommonSettings:
         '--disable-gpu',
         '--disable-blink-features=AutomationControlled',
         '--window-size=1920,1080',
-        '--start-maximized',
         '--disable-extensions',
         '--disable-popup-blocking',
         '--disable-notifications',
@@ -123,7 +122,11 @@ class CommonSettings:
         '--media-cache-size=0',  # 미디어 캐시 크기를 0으로 설정
         '--aggressive-cache-discard',  # 적극적인 캐시 삭제
         '--memory-pressure-off',  # 메모리 압박 해제
-        '--max_old_space_size=4096'  # 메모리 제한 증가
+        '--max_old_space_size=4096',  # 메모리 제한 증가
+        '--headless',  # 헤드리스 모드 (GUI 없이 실행)
+        '--disable-web-security',  # 웹 보안 비활성화 (헤드리스에서 필요할 수 있음)
+        '--allow-running-insecure-content',  # 안전하지 않은 콘텐츠 허용
+        '--disable-features=VizDisplayCompositor'  # 디스플레이 컴포지터 비활성화
     ]
     
     CHROME_EXPERIMENTAL_OPTIONS = {

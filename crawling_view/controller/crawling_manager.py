@@ -48,7 +48,8 @@ def run_crawling(target_date=None):
             genie_data = SongService.convert_to_crawling_format(genie_songs, 'genie')
             genie_results = genie_crawler.crawl_songs(genie_data)
             crawling_results['genie'] = genie_results
-            logger.info(f"✅ Genie 크롤링 완료: {len(genie_results)}개 결과")
+            failed_count = len(genie_songs) - len(genie_results)
+            logger.info(f"✅ Genie 크롤링 완료: {len(genie_results)}개 성공, {failed_count}개 실패")
         
         # YouTube Music 크롤링
         ytmusic_songs = SongService.get_songs_by_platform(active_songs, 'youtube_music')
@@ -58,7 +59,8 @@ def run_crawling(target_date=None):
             ytmusic_data = SongService.convert_to_crawling_format(ytmusic_songs, 'youtube_music')
             ytmusic_results = ytmusic_crawler.crawl_songs(ytmusic_data)
             crawling_results['youtube_music'] = ytmusic_results
-            logger.info(f"✅ YouTube Music 크롤링 완료: {len(ytmusic_results)}개 결과")
+            failed_count = len(ytmusic_songs) - len(ytmusic_results)
+            logger.info(f"✅ YouTube Music 크롤링 완료: {len(ytmusic_results)}개 성공, {failed_count}개 실패")
         
         # YouTube 크롤링
         youtube_songs = SongService.get_songs_by_platform(active_songs, 'youtube')
@@ -68,7 +70,8 @@ def run_crawling(target_date=None):
             youtube_data = SongService.convert_to_crawling_format(youtube_songs, 'youtube')
             youtube_results = youtube_crawler.crawl_songs(youtube_data)
             crawling_results['youtube'] = youtube_results
-            logger.info(f"✅ YouTube 크롤링 완료: {len(youtube_results)}개 결과")
+            failed_count = len(youtube_songs) - len(youtube_results)
+            logger.info(f"✅ YouTube 크롤링 완료: {len(youtube_results)}개 성공, {failed_count}개 실패")
         
         # Melon 크롤링
         melon_songs = SongService.get_songs_by_platform(active_songs, 'melon')
@@ -78,7 +81,8 @@ def run_crawling(target_date=None):
             melon_data = SongService.convert_to_crawling_format(melon_songs, 'melon')
             melon_results = melon_crawler.crawl_songs(melon_data)
             crawling_results['melon'] = melon_results
-            logger.info(f"✅ Melon 크롤링 완료: {len(melon_results)}개 결과")
+            failed_count = len(melon_songs) - len(melon_results)
+            logger.info(f"✅ Melon 크롤링 완료: {len(melon_results)}개 성공, {failed_count}개 실패")
         
         # 3단계: DB 저장
         logger.info("💾 3단계: DB 저장")
