@@ -18,15 +18,15 @@ logger = logging.getLogger(__name__)
 def run_crawling(target_date=None):
     """
     크롤링 전체 프로세스 실행
-    
+        
     Args:
         target_date (date, optional): 크롤링 대상 날짜. None이면 오늘 날짜
-        
+            
     Returns:
         dict: 크롤링 결과 요약
     """
     logger.info("🚀 크롤링 프로세스 시작")
-    
+        
     try:
         # 1단계: 크롤링 대상 노래 조회
         logger.info("📋 1단계: 크롤링 대상 노래 조회")
@@ -89,7 +89,7 @@ def run_crawling(target_date=None):
         
         if 'genie' in crawling_results:
             csv_results['genie'] = save_genie_csv(crawling_results['genie'])
-        
+                
         if 'youtube_music' in crawling_results:
             csv_results['youtube_music'] = save_youtube_music_csv(crawling_results['youtube_music'])
         

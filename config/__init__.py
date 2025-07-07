@@ -1,1 +1,1 @@
-# Django 크롤링 서버 - Celery 사용 안함
+# Django 크롤링 서버

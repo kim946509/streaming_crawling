@@ -9,14 +9,12 @@ from .youtube_music_logic import YouTubeMusicCrawler
 
 logger = logging.getLogger(__name__)
 
-def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_password, save_csv=True, save_db=True):
+def run_youtube_music_crawling(song_list, save_csv=True, save_db=True):
     """
     YouTube Music 크롤링 실행
     
     Args:
         song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명', 'song_id': 'id'}, ...]
-        youtube_music_id (str): YouTube Music 로그인 ID
-        youtube_music_password (str): YouTube Music 로그인 비밀번호
         save_csv (bool): CSV 저장 여부
         save_db (bool): DB 저장 여부
     
@@ -30,7 +28,7 @@ def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_passwo
     try:
         # Chrome 드라이버 설정 및 실행
         with setup_driver() as driver:
-            crawler = YouTubeMusicCrawler(driver, youtube_music_id, youtube_music_password)
+            crawler = YouTubeMusicCrawler(driver)
             
             # 로그인 수행
             if not crawler.login():
@@ -80,9 +78,5 @@ if __name__ == "__main__":
         {'song_title': 'How Sweet', 'artist_name': 'NewJeans'},
     ]
     
-    # 실제 사용 시에는 user_id_and_password에서 import
-    test_id = "your_youtube_music_id"
-    test_password = "your_youtube_music_password"
-    
-    results = run_youtube_music_crawling(test_songs, test_id, test_password)
+    results = run_youtube_music_crawling(test_songs)
     print(f"크롤링 결과: {len(results)}곡") 
