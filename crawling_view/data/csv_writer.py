@@ -248,4 +248,59 @@ def save_youtube_csv(results, company_name="rhoonart"):
         saved_files.append(str(filepath))
         logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
     
+    return saved_files
+
+def save_melon_csv(results, company_name="rhoonart"):
+    """
+    Melon 크롤링 결과를 CSV로 저장
+    
+    Args:
+        results (list): 크롤링 결과 리스트
+        company_name (str): 회사명
+        
+    Returns:
+        list: 저장된 파일 경로 리스트
+    """
+    if not results:
+        return []
+    
+    csv_dir = _create_directory(company_name, 'melon')
+    saved_files = []
+    
+    for result in results:
+        song_title = result.get('song_title', 'unknown')
+        
+        # 파일명 정리
+        filename = f"{clean_filename(song_title)}.csv"
+        filepath = csv_dir / filename
+        
+        # DataFrame 생성
+        df = pd.DataFrame([{
+            'song_id': f"melon_{result.get('artist_name', '')}_{song_title}".lower().replace(' ', '_'),
+            'song_title': song_title,
+            'artist_name': result.get('artist_name'),
+            'views': result.get('views', 0),
+            'listeners': result.get('listeners', 0),
+            'melon_song_id': result.get('melon_song_id', ''),
+            'crawl_date': result.get('crawl_date')
+        }])
+        
+        # 기존 파일이 있으면 누적
+        if filepath.exists():
+            try:
+                old_df = pd.read_csv(filepath)
+                combined_df = pd.concat([old_df, df], ignore_index=True)
+            except Exception as e:
+                logger.error(f"❌ 기존 CSV 읽기 실패: {filepath} - {e}")
+                combined_df = df
+        else:
+            combined_df = df
+        
+        # 날짜순 정렬 후 저장
+        combined_df = combined_df.sort_values(by="crawl_date", ascending=False)
+        combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
+        
+        saved_files.append(str(filepath))
+        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+    
     return saved_files 

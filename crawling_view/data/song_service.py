@@ -71,7 +71,7 @@ class SongService:
         if platform == 'youtube':
             # YouTube URL이 있는 곡들만 필터링
             return [song for song in songs if song.is_platform_available('youtube')]
-        elif platform in ['genie', 'youtube_music']:
+        elif platform in ['genie', 'youtube_music', 'melon']:
             # 해당 플랫폼 정보가 있는 곡들만 필터링
             return [song for song in songs if song.is_platform_available(platform)]
         else:
@@ -115,6 +115,15 @@ class SongService:
                 (song.get_platform_info('youtube')['url'], song.get_platform_info('youtube')['artist'], song.id)
                 for song in songs
                 if song.is_platform_available('youtube')
+            ]
+        elif platform == 'melon':
+            return [
+                {
+                    'song_id': song.id,
+                    'melon_song_id': song.get_platform_info('melon')['song_id']
+                }
+                for song in songs
+                if song.is_platform_available('melon')
             ]
         else:
             logger.warning(f"❌ 알 수 없는 플랫폼: {platform}")
