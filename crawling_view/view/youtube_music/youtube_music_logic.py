@@ -41,6 +41,31 @@ class YouTubeMusicCrawler:
             logger.warning(f"쿠키 로드 실패: {e}")
         return None
     
+    def _is_cookie_expired(self, cookies):
+        """쿠키 만료 여부 확인"""
+        try:
+            import time
+            current_time = time.time()
+            
+            for cookie in cookies:
+                # expires 필드가 있는 경우 확인
+                if 'expiry' in cookie:
+                    if cookie['expiry'] < current_time:
+                        logger.info(f"🍪 쿠키 만료됨: {cookie.get('name', 'unknown')}")
+                        return True
+                
+                # maxAge 필드가 있는 경우 확인
+                if 'maxAge' in cookie and cookie['maxAge'] > 0:
+                    # maxAge는 초 단위이므로 현재 시간과 비교
+                    if cookie['maxAge'] < current_time:
+                        logger.info(f"🍪 쿠키 만료됨: {cookie.get('name', 'unknown')}")
+                        return True
+            
+            return False
+        except Exception as e:
+            logger.warning(f"쿠키 만료 확인 실패: {e}")
+            return False
+    
     def _save_cookies(self):
         """현재 쿠키 저장"""
         try:
@@ -102,17 +127,21 @@ class YouTubeMusicCrawler:
             # 1단계: 저장된 쿠키로 로그인 시도
             cookies = self._load_cookies()
             if cookies:
-                logger.info("🍪 저장된 쿠키로 로그인 시도")
-                if self._apply_cookies(cookies):
-                    # 로그인 상태 확인
-                    if self._check_login_status():
-                        self.is_logged_in = True
-                        logger.info("✅ 쿠키로 로그인 성공")
-                        return True
-                    else:
-                        logger.warning("⚠️ 쿠키가 만료되었거나 유효하지 않습니다. 일반 로그인을 시도합니다.")
+                # 쿠키 만료 여부 확인
+                if self._is_cookie_expired(cookies):
+                    logger.warning("⚠️ 쿠키가 만료되었습니다. 일반 로그인을 시도합니다.")
                 else:
-                    logger.warning("⚠️ 쿠키 적용에 실패했습니다. 일반 로그인을 시도합니다.")
+                    logger.info("🍪 저장된 쿠키로 로그인 시도")
+                    if self._apply_cookies(cookies):
+                        # 로그인 상태 확인
+                        if self._check_login_status():
+                            self.is_logged_in = True
+                            logger.info("✅ 쿠키로 로그인 성공")
+                            return True
+                        else:
+                            logger.warning("⚠️ 쿠키가 유효하지 않습니다. 일반 로그인을 시도합니다.")
+                    else:
+                        logger.warning("⚠️ 쿠키 적용에 실패했습니다. 일반 로그인을 시도합니다.")
             else:
                 logger.info("📝 저장된 쿠키가 없습니다. 일반 로그인을 시도합니다.")
             
