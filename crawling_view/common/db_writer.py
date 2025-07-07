@@ -21,40 +21,20 @@ def _validate_and_clean_data(data, platform):
         dict: 정리된 데이터 또는 None (데이터가 유효하지 않은 경우)
     """
     if not data:
+        logger.error(f"❌ {platform} 데이터가 비어있음")
         return None
         
-    # 필수 필드 검증
+    # song_id 필수 검증 (절대 누락되면 안 됨)
     song_id = data.get('song_id')
-    
     if not song_id:
-        logger.warning(f"❌ {platform} 필수 데이터 누락: song_id={song_id}")
+        logger.error(f"❌ {platform} song_id 누락 - 저장 차단: {data}")
         return None
     
     # views 처리 (필수 데이터)
-    views = data.get('views')
-    if views is None or views == 'None':
-        views = -999  # 오류 (필수 데이터 누락)
-        logger.error(f"❌ {platform} 조회수 데이터 누락: song_id={song_id}")
-    else:
-        try:
-            views = int(views) if views else -999  # 0도 오류로 처리 (데이터가 있어야 함)
-        except (ValueError, TypeError):
-            original_views = views  # 원래 값 보존
-            views = -999  # 오류
-            logger.error(f"❌ {platform} 조회수 변환 실패: song_id={song_id}, 원래값={original_views} (type: {type(original_views)}), 변환후=-999")
+    views = _process_numeric_field(data.get('views'), '조회수', platform, song_id)
     
     # listeners 처리 (필수 데이터)
-    listeners = data.get('listeners')
-    if listeners is None or listeners == 'None':
-        listeners = -999  # 오류 (필수 데이터 누락)
-        logger.error(f"❌ {platform} 청취자 수 데이터 누락: song_id={song_id}")
-    else:
-        try:
-            listeners = int(listeners) if listeners else -999  # 0도 오류로 처리 (데이터가 있어야 함)
-        except (ValueError, TypeError):
-            original_listeners = listeners  # 원래 값 보존
-            listeners = -999  # 오류
-            logger.error(f"❌ {platform} 청취자 수 변환 실패: song_id={song_id}, 원래값={original_listeners} (type: {type(original_listeners)}), 변환후=-999")
+    listeners = _process_numeric_field(data.get('listeners'), '청취자 수', platform, song_id)
     
     return {
         'song_id': song_id,
@@ -62,30 +42,151 @@ def _validate_and_clean_data(data, platform):
         'listeners': listeners
     }
 
-def get_song_info_id(artist_name, song_name):
+def _process_numeric_field(value, field_name, platform, song_id):
     """
-    SongInfo 테이블에서 artist와 title로 id 조회
+    숫자 필드 처리 (views, listeners)
     
     Args:
-        artist_name (str): 아티스트명
-        song_name (str): 곡명
+        value: 원본 값
+        field_name (str): 필드명 (조회수, 청취자 수)
+        platform (str): 플랫폼명
+        song_id (str): 곡 ID
+        
+    Returns:
+        int: 처리된 값 (-999: 오류, 양수: 정상값)
+    """
+    if value is None or value == 'None':
+        logger.error(f"❌ {platform} {field_name} 데이터 누락: song_id={song_id}")
+        return -999
+    
+    try:
+        processed_value = int(value) if value else -999
+        if processed_value == -999:
+            logger.error(f"❌ {platform} {field_name} 변환 실패: song_id={song_id}, 원래값={value}")
+        return processed_value
+    except (ValueError, TypeError):
+        logger.error(f"❌ {platform} {field_name} 변환 실패: song_id={song_id}, 원래값={value} (type: {type(value)})")
+        return -999
+
+def get_song_info_id(platform, **kwargs):
+    """
+    SongInfo 테이블에서 플랫폼별 정보로 id 조회
+    
+    Args:
+        platform (str): 플랫폼명 ('genie', 'youtube', 'youtube_music')
+        **kwargs: 플랫폼별 조회 조건
+            - genie: artist_name, song_name
+            - youtube: url
+            - youtube_music: artist_name, song_name
         
     Returns:
         str: SongInfo의 id 또는 None
     """
     try:
-        song_info = SongInfo.objects.get(
-            artist=artist_name,
-            title=song_name
-        )
-        logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - {artist_name} - {song_name}")
+        if platform == 'genie':
+            # Genie는 artist와 title로 조회
+            artist_name = kwargs.get('artist_name')
+            song_name = kwargs.get('song_name')
+            if not artist_name or not song_name:
+                logger.warning(f"❌ Genie artist_name 또는 song_name 누락")
+                return None
+            
+            song_info = SongInfo.objects.get(genie_artist=artist_name, genie_title=song_name)
+            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - Genie - {artist_name} - {song_name}")
+            
+        elif platform == 'youtube':
+            # YouTube는 URL로만 조회
+            url = kwargs.get('url')
+            if not url:
+                logger.warning(f"❌ YouTube URL 누락")
+                return None
+            
+            song_info = SongInfo.objects.get(youtube_url=url)
+            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube URL")
+                
+        elif platform == 'youtube_music':
+            # YouTube Music은 artist와 title로 조회
+            artist_name = kwargs.get('artist_name')
+            song_name = kwargs.get('song_name')
+            if not artist_name or not song_name:
+                logger.warning(f"❌ YouTube Music artist_name 또는 song_name 누락")
+                return None
+            
+            song_info = SongInfo.objects.get(youtube_music_artist=artist_name, youtube_music_title=song_name)
+            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube Music - {artist_name} - {song_name}")
+            
+        else:
+            logger.warning(f"❌ 지원하지 않는 플랫폼: {platform}")
+            return None
+        
         return song_info.id
+        
     except SongInfo.DoesNotExist:
-        logger.warning(f"❌ SongInfo 찾을 수 없음: {artist_name} - {song_name}")
+        logger.warning(f"❌ SongInfo 찾을 수 없음: {platform} - {kwargs}")
         return None
     except Exception as e:
-        logger.error(f"❌ SongInfo 조회 실패: {artist_name} - {song_name} - {e}")
+        logger.error(f"❌ SongInfo 조회 실패: {platform} - {kwargs} - {e}")
         return None
+
+def _save_crawling_data(results, platform, platform_type):
+    """
+    크롤링 데이터 저장 공통 함수
+    
+    Args:
+        results (list/dict): 크롤링 결과
+        platform (str): 플랫폼명 (로그용)
+        platform_type: PlatformType enum 값
+        
+    Returns:
+        dict: 저장 결과 (saved_count, failed_count, skipped_count)
+    """
+    if not results:
+        logger.warning(f"⚠️ {platform} 크롤링 결과가 없음")
+        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0}
+    
+    saved_count = 0
+    failed_count = 0
+    skipped_count = 0
+    
+    # YouTube는 dict 형태, 나머지는 list 형태
+    items = results.items() if isinstance(results, dict) else enumerate(results)
+    
+    for key, result in items:
+        try:
+            # song_id 추출 및 검증 (절대 누락되면 안 됨)
+            if isinstance(result, dict):
+                song_id = result.get('song_id')
+            else:
+                song_id = key
+            
+            if not song_id:
+                logger.error(f"❌ {platform} song_id 누락 - 저장 차단: {result}")
+                skipped_count += 1
+                continue
+            
+            # 데이터 검증 및 정리
+            clean_data = _validate_and_clean_data(result, platform)
+            if not clean_data:
+                skipped_count += 1
+                continue
+            
+            # DB 저장
+            CrawlingData.objects.create(
+                song_id=clean_data['song_id'],
+                views=clean_data['views'],
+                listeners=clean_data['listeners'],
+                platform=platform_type
+            )
+            
+            saved_count += 1
+            logger.debug(f"✅ {platform} DB 저장 완료: {clean_data['song_id']}")
+            
+        except Exception as e:
+            failed_count += 1
+            logger.error(f"❌ {platform} DB 저장 실패: {result} - {e}")
+    
+    logger.info(f"✅ {platform} DB 저장 완료: {saved_count}개 성공, {failed_count}개 실패, {skipped_count}개 스킵")
+    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count}
 
 def save_genie_to_db(results):
     """
@@ -97,44 +198,7 @@ def save_genie_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    if not results:
-        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0}
-    
-    saved_count = 0
-    failed_count = 0
-    skipped_count = 0
-    
-    for result in results:
-        try:
-            # song_id가 있는지 확인
-            song_id = result.get('song_id')
-            
-            if not song_id:
-                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
-                skipped_count += 1
-                continue
-            
-            # 데이터 검증 및 정리
-            clean_data = _validate_and_clean_data(result, 'Genie')
-            if not clean_data:
-                skipped_count += 1
-                continue
-            
-            CrawlingData.objects.create(
-                song_id=clean_data['song_id'],
-                views=clean_data['views'],
-                listeners=clean_data['listeners'],
-                platform=PlatformType.GENIE
-            )
-            saved_count += 1
-            logger.debug(f"✅ Genie DB 저장 완료: {clean_data['song_id']}")
-            
-        except Exception as e:
-            failed_count += 1
-            logger.error(f"❌ Genie DB 저장 실패: {result} - {e}")
-    
-    logger.info(f"✅ Genie DB 저장 완료: {saved_count}개 성공, {failed_count}개 실패, {skipped_count}개 스킵")
-    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count}
+    return _save_crawling_data(results, 'Genie', PlatformType.GENIE)
 
 def save_youtube_music_to_db(results):
     """
@@ -146,44 +210,7 @@ def save_youtube_music_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    if not results:
-        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0}
-    
-    saved_count = 0
-    failed_count = 0
-    skipped_count = 0
-    
-    for result in results:
-        try:
-            # song_id가 있는지 확인
-            song_id = result.get('song_id')
-            
-            if not song_id:
-                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
-                skipped_count += 1
-                continue
-            
-            # 데이터 검증 및 정리
-            clean_data = _validate_and_clean_data(result, 'YouTube Music')
-            if not clean_data:
-                skipped_count += 1
-                continue
-            
-            CrawlingData.objects.create(
-                song_id=clean_data['song_id'],
-                views=clean_data['views'],
-                listeners=clean_data['listeners'],
-                platform=PlatformType.YOUTUBE_MUSIC
-            )
-            saved_count += 1
-            logger.debug(f"✅ YouTube Music DB 저장 완료: {clean_data['song_id']}")
-            
-        except Exception as e:
-            failed_count += 1
-            logger.error(f"❌ YouTube Music DB 저장 실패: {result} - {e}")
-    
-    logger.info(f"✅ YouTube Music DB 저장 완료: {saved_count}개 성공, {failed_count}개 실패, {skipped_count}개 스킵")
-    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count}
+    return _save_crawling_data(results, 'YouTube Music', PlatformType.YOUTUBE_MUSIC)
 
 def save_youtube_to_db(results):
     """
@@ -195,39 +222,6 @@ def save_youtube_to_db(results):
     Returns:
         dict: 저장 결과 (saved_count, failed_count, skipped_count)
     """
-    if not results:
-        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0}
-    
-    saved_count = 0
-    failed_count = 0
-    skipped_count = 0
-    
-    for song_id, result in results.items():
-        try:
-            # song_id가 있는지 확인
-            if not song_id:
-                logger.warning(f"❌ song_id 누락으로 스킵: {result}")
-                skipped_count += 1
-                continue
-            
-            # 데이터 검증 및 정리
-            clean_data = _validate_and_clean_data(result, 'YouTube')
-            if not clean_data:
-                skipped_count += 1
-                continue
-            
-            CrawlingData.objects.create(
-                song_id=clean_data['song_id'],
-                views=clean_data['views'],
-                listeners=clean_data['listeners'],
-                platform=PlatformType.YOUTUBE
-            )
-            saved_count += 1
-            logger.debug(f"✅ YouTube DB 저장 완료: {clean_data['song_id']}")
-            
-        except Exception as e:
-            failed_count += 1
-            logger.error(f"❌ YouTube DB 저장 실패: {result} - {e}")
-    
-    logger.info(f"✅ YouTube DB 저장 완료: {saved_count}개 성공, {failed_count}개 실패, {skipped_count}개 스킵")
-    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count} 
+    return _save_crawling_data(results, 'YouTube', PlatformType.YOUTUBE)
+
+ 

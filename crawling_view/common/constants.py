@@ -27,8 +27,8 @@ class GenieSelectors:
     ]
     
     # 곡 정보 페이지 통계 관련
-    TOTAL_STATS = 'div.total'  # 통계 정보 컨테이너
-    TOTAL_STATS_PARAGRAPHS = 'p'  # 통계 수치
+    TOTAL_STATS = '.daily-chart .total'  # 통계 정보 컨테이너
+    TOTAL_STATS_PARAGRAPHS = 'div p'  # 통계 수치 (div 안의 p 태그)
     
     # 기존 검색 결과 관련 셀렉터들
     SONG_ITEMS = "tr.list__item"
@@ -137,6 +137,6 @@ class FilePaths:
     LOG_DIR = "logs"
     
     # CSV 파일 컬럼
-    GENIE_COLUMNS = ['song_id','artist_name','song_title','total_person_count', 'view_count', 'crawl_date']
-    YOUTUBE_MUSIC_COLUMNS = ['song_id','artist_name','song_title','view_count', 'crawl_date']
-    YOUTUBE_COLUMNS = ['song_id','artist_name','song_title','view_count', 'youtube_url', 'upload_date', 'crawl_date'] 
+    GENIE_COLUMNS = ['song_id','artist_name','song_title','total_person_count', 'views', 'crawl_date']
+    YOUTUBE_MUSIC_COLUMNS = ['song_id','artist_name','song_title','views', 'crawl_date']
+    YOUTUBE_COLUMNS = ['song_id','artist_name','song_title','views', 'youtube_url', 'upload_date', 'crawl_date'] 

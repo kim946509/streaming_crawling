@@ -50,7 +50,7 @@ def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_passwo
                 
                 if result:
                     crawled_data.append(result)
-                    logger.info(f"✅ 크롤링 완료: {result['song_title']} - {result['artist_name']} (조회수: {result['view_count']})")
+                    logger.info(f"✅ 크롤링 완료: {result['song_title']} - {result['artist_name']} (조회수: {result['views']})")
                 else:
                     logger.warning(f"❌ 크롤링 실패: {song_title} - {artist_name}")
         

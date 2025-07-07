@@ -61,4 +61,4 @@ if __name__ == "__main__":
     print(f"크롤링 결과: {len(results)}개")
     for song_id, result in results.items():
         print(f"[YouTube] 곡명: {result['song_name']}, 아티스트: {result['artist_name']}, "
-              f"조회수: {result['view_count']}, 업로드일: {result['upload_date']}") 
+              f"조회수: {result['views']}, 업로드일: {result['upload_date']}") 

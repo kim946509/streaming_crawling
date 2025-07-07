@@ -10,7 +10,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..common.constants import YouTubeMusicSelectors, CommonSettings
 from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
-from ..common.matching import compare_song_info
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +120,7 @@ class YouTubeMusicCrawler:
             return result
             
         except Exception as e:
-            logger.error(f"❌ 곡 크롤링 실패 ({artist_name} - {song_title}): {e}", exc_info=True)
+            logger.error(f"❌ 곡 크롤링 실패 ({song_title} - {artist_name}): {e}", exc_info=True)
             return None
     
     def _search_song(self, song_title, artist_name):
@@ -136,7 +135,11 @@ class YouTubeMusicCrawler:
             str: 검색 결과 HTML 또는 None
         """
         try:
-            query = f"{artist_name} {song_title}"
+            # 줄바꿈 제거 및 공백 정리
+            clean_artist = artist_name.strip().replace('\n', ' ').replace('\r', ' ')
+            clean_song = song_title.strip().replace('\n', ' ').replace('\r', ' ')
+            query = f"{clean_artist} {clean_song}"
+            logger.info(f"🔍 YouTube Music 검색어: '{query}'")
             max_attempts = 3
             
             for attempt in range(max_attempts):
@@ -236,8 +239,10 @@ class YouTubeMusicCrawler:
                 return None
             
             song_items = soup.select(YouTubeMusicSelectors.SONG_ITEMS)
+            logger.info(f"🔍 YouTube Music 검색 결과: {len(song_items)}개 곡 발견")
             
-            for item in song_items:
+            for i, item in enumerate(song_items):
+                logger.info(f"🔍 검사 중인 곡 {i+1}/{len(song_items)}")
                 try:
                     # 곡명 추출
                     song_title = self._extract_song_title(item)
@@ -248,30 +253,43 @@ class YouTubeMusicCrawler:
                     artist_name = self._extract_artist_name(item)
                     if not artist_name:
                         continue
+                        
+                    logger.info(f"🔍 발견된 곡: '{song_title}' - '{artist_name}'")
 
                     # 조회수 추출
                     view_count = self._extract_view_count(item)
 
-                    # 공통 함수를 사용하여 곡 정보 비교
-                    comparison_result = compare_song_info(song_title, artist_name, target_song, target_artist)
+                    # 디버그 로깅
+                    normalized_song = normalize_text(song_title)
+                    normalized_target = normalize_text(target_song)
+                    normalized_artist = normalize_text(artist_name)
+                    normalized_target_artist = normalize_text(target_artist)
                     
-                    logger.debug(f"일치 검사: 제목 일치={comparison_result['title_match']}, 아티스트 일치={comparison_result['artist_match']}")
+                    logger.debug(f"검사 중: 제목='{song_title}' → '{normalized_song}' vs '{target_song}' → '{normalized_target}'")
+                    logger.debug(f"검사 중: 아티스트='{artist_name}' → '{normalized_artist}' vs '{target_artist}' → '{normalized_target_artist}'")
+
+                    # 정규화된 문자열로 비교
+                    title_match = normalized_song == normalized_target
+                    artist_match = normalized_artist == normalized_target_artist
                     
-                    if comparison_result['both_match']:
+                    logger.debug(f"일치 검사: 제목 일치={title_match}, 아티스트 일치={artist_match}")
+                    
+                    if title_match and artist_match:
                         result = {
                             'song_title': song_title,
                             'artist_name': artist_name,
-                            'view_count': convert_view_count(view_count),
+                            'views': convert_view_count(view_count),
+                            'listeners': -1,  # YouTube Music은 청취자 수 제공 안함
                             'crawl_date': get_current_timestamp(),
                             'song_id': song_id
                         }
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
                     else:
-                        if not comparison_result['title_match']:
-                            logger.debug(f"제목 불일치: '{comparison_result['normalized_song']}' != '{comparison_result['normalized_target_song']}'")
-                        if not comparison_result['artist_match']:
-                            logger.debug(f"아티스트 불일치: '{comparison_result['normalized_artist']}' != '{comparison_result['normalized_target_artist']}'")
+                        if not title_match:
+                            logger.debug(f"제목 불일치: '{normalized_song}' != '{normalized_target}'")
+                        if not artist_match:
+                            logger.debug(f"아티스트 불일치: '{normalized_artist}' != '{normalized_target_artist}'")
 
                 except Exception as e:
                     logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")

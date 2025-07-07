@@ -284,24 +284,41 @@ class GenieCrawler:
     def _extract_view_count(self, soup):
         """조회수 정보 추출"""
         try:
-            total_div = soup.select_one(GenieSelectors.TOTAL_STATS)
-            if total_div:
-                p_tags = total_div.select(GenieSelectors.TOTAL_STATS_PARAGRAPHS)
-                if len(p_tags) >= 2:
-                    try:
-                        # 첫 번째 <p>: 전체 청취자수
-                        total_person_count = int(p_tags[0].text.replace(',', '').strip())
-                        # 두 번째 <p>: 전체 재생수
-                        total_play_count = int(p_tags[1].text.replace(',', '').strip())
-                        
-                        return {
-                            'views': total_play_count,
-                            'listeners': total_person_count
-                        }
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"❌ 청취자수/재생수 변환 실패: {e}")
-                        return {'views': -999, 'listeners': -999}
+            # 더 정확한 셀렉터 사용
+            total_container = soup.select_one('.daily-chart .total')
+            if total_container:
+                # 첫 번째 div (전체 청취자수)
+                first_div = total_container.select_one('div:first-child')
+                # 두 번째 div (전체 재생수)
+                second_div = total_container.select_one('div:nth-child(2)')
+                
+                total_person_count = -999
+                total_play_count = -999
+                
+                if first_div:
+                    p_tag = first_div.select_one('p')
+                    if p_tag:
+                        try:
+                            total_person_count = int(p_tag.text.replace(',', '').strip())
+                            logger.info(f"✅ 전체 청취자수 추출 성공: {total_person_count}")
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"❌ 전체 청취자수 변환 실패: {e}")
+                
+                if second_div:
+                    p_tag = second_div.select_one('p')
+                    if p_tag:
+                        try:
+                            total_play_count = int(p_tag.text.replace(',', '').strip())
+                            logger.info(f"✅ 전체 재생수 추출 성공: {total_play_count}")
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"❌ 전체 재생수 변환 실패: {e}")
+                
+                return {
+                    'views': total_play_count,
+                    'listeners': total_person_count
+                }
             
+            logger.warning("❌ 통계 정보 컨테이너를 찾을 수 없음")
             return {'views': -999, 'listeners': -999}
             
         except Exception as e:

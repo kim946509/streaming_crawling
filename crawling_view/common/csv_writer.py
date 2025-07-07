@@ -105,14 +105,14 @@ def save_genie_csv(results, company_name="rhoonart"):
         filename = f"{clean_filename(song_title)}.csv"
         filepath = csv_dir / filename
         
-        # view_count 데이터 처리
-        view_count_data = result.get('view_count', {})
-        if isinstance(view_count_data, dict):
-            total_person_count = view_count_data.get('total_person_count', 0)
-            view_count = view_count_data.get('view_count', 0)
+        # views 데이터 처리
+        views_data = result.get('views', {})
+        if isinstance(views_data, dict):
+            total_person_count = views_data.get('total_person_count', 0)
+            views = views_data.get('views', 0)
         else:
             total_person_count = 0
-            view_count = view_count_data if view_count_data else 0
+            views = views_data if views_data else 0
         
         # DataFrame 생성
         df = pd.DataFrame([{
@@ -120,7 +120,7 @@ def save_genie_csv(results, company_name="rhoonart"):
             'song_title': song_title,
             'artist_name': result.get('artist_name'),
             'total_person_count': total_person_count,
-            'view_count': view_count,
+            'views': views,
             'crawl_date': result.get('crawl_date')
         }])
         
@@ -173,7 +173,7 @@ def save_youtube_music_csv(results, company_name="rhoonart"):
             'song_id': f"ytmusic_{result.get('artist_name', '')}_{song_title}".lower().replace(' ', '_'),
             'song_title': song_title,
             'artist_name': result.get('artist_name'),
-            'view_count': result.get('view_count', 0),
+            'views': result.get('views', 0),
             'crawl_date': result.get('crawl_date')
         }])
         
@@ -226,7 +226,7 @@ def save_youtube_csv(results, company_name="rhoonart"):
             'song_id': song_id,
             'song_title': result.get('song_name'),
             'artist_name': result.get('artist_name'),
-            'view_count': result.get('view_count', 0),
+            'views': result.get('views', 0),
             'youtube_url': result.get('youtube_url'),
             'upload_date': result.get('upload_date'),
             'crawl_date': result.get('extracted_date')

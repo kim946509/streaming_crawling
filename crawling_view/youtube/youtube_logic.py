@@ -36,7 +36,7 @@ class YouTubeCrawler:
                 if result:
                     results[song_id] = result
                     logger.info(f"✅ 크롤링 성공 - 아티스트: {artist_name}, 제목: {result['song_name']}, "
-                              f"조회수: {result['view_count']}, 업로드일: {result['upload_date']}")
+                              f"조회수: {result['views']}, 업로드일: {result['upload_date']}")
                 else:
                     logger.error(f"❌ 크롤링 실패: {artist_name} - {url}")
                     
@@ -46,7 +46,8 @@ class YouTubeCrawler:
                     'song_id': song_id,
                     'song_name': None,
                     'artist_name': artist_name,
-                    'view_count': None,
+                    'views': None,
+                    'listeners': -1,  # YouTube는 청취자 수 제공 안함
                     'youtube_url': url,
                     'upload_date': None,
                     'extracted_date': get_current_timestamp(),
@@ -99,7 +100,8 @@ class YouTubeCrawler:
                 'song_id': song_id,  # SongInfo의 pk
                 'song_name': song_name,
                 'artist_name': artist_name,
-                'view_count': view_count,
+                'views': view_count,
+                'listeners': -1,  # YouTube는 청취자 수 제공 안함
                 'youtube_url': url,
                 'upload_date': upload_date,
                 'extracted_date': get_current_timestamp()
