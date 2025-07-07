@@ -109,7 +109,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(genie_artist=artist_name, genie_title=song_name)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - Genie - {artist_name} - {song_name}")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
             
         elif platform == 'youtube':
             # YouTube는 URL로만 조회
@@ -119,7 +120,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(youtube_url=url)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube URL")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
                 
         elif platform == 'youtube_music':
             # YouTube Music은 artist와 title로 조회
@@ -130,7 +132,8 @@ def get_song_info_id(platform, **kwargs):
                 return None
             
             song_info = SongInfo.objects.get(youtube_music_artist=artist_name, youtube_music_title=song_name)
-            logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - YouTube Music - {artist_name} - {song_name}")
+            # SongInfo 조회 성공은 디버그 레벨로 변경
+            pass
             
         else:
             logger.warning(f"❌ 지원하지 않는 플랫폼: {platform}")
@@ -196,7 +199,8 @@ def _save_crawling_data(results, platform, platform_type):
             )
             
             saved_count += 1
-            logger.debug(f"✅ {platform} DB 저장 완료: {clean_data['song_id']}")
+            # 성공한 DB 저장은 디버그 레벨로 변경
+            pass
             
         except Exception as e:
             failed_count += 1

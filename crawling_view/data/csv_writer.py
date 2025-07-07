@@ -58,7 +58,7 @@ def save_to_csv(data, filename_prefix, headers=None):
                     writer = csv.writer(csvfile)
                     writer.writerows(data)
         
-        logger.info(f"✅ CSV 파일 저장 완료: {file_path}")
+        # CSV 파일 저장 성공은 디버그 레벨로 변경
         return file_path
         
     except Exception as e:
@@ -140,7 +140,7 @@ def save_genie_csv(results, company_name="rhoonart"):
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         
         saved_files.append(str(filepath))
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        logger.debug(f"✅ CSV 파일 저장 완료: {filepath}")
     
     return saved_files
 
@@ -193,7 +193,7 @@ def save_youtube_music_csv(results, company_name="rhoonart"):
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         
         saved_files.append(str(filepath))
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        logger.debug(f"✅ CSV 파일 저장 완료: {filepath}")
     
     return saved_files
 
@@ -246,7 +246,7 @@ def save_youtube_csv(results, company_name="rhoonart"):
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         
         saved_files.append(str(filepath))
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        logger.debug(f"✅ CSV 파일 저장 완료: {filepath}")
     
     return saved_files
 
@@ -301,6 +301,6 @@ def save_melon_csv(results, company_name="rhoonart"):
         combined_df.to_csv(filepath, index=False, encoding='utf-8-sig')
         
         saved_files.append(str(filepath))
-        logger.info(f"✅ CSV 파일 저장 완료: {filepath}")
+        logger.debug(f"✅ CSV 파일 저장 완료: {filepath}")
     
     return saved_files 

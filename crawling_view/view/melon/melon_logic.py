@@ -83,7 +83,7 @@ class MelonCrawler:
                 'melon_song_id': melon_song_id
             }
             
-            logger.info(f"✅ Melon 크롤링 성공: {song_name} - {artist_name} (조회수: {views}, 청취자: {listeners})")
+            logger.debug(f"✅ Melon 크롤링 성공: {song_name} - {artist_name} (조회수: {views}, 청취자: {listeners})")
             return result
             
         except requests.exceptions.RequestException as e:

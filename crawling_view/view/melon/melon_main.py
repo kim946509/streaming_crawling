@@ -37,14 +37,14 @@ def run_melon_crawling(song_list, save_csv=True, save_db=True):
                 logger.warning(f"⚠️ melon_song_id가 없습니다: {song_info}")
                 continue
             
-            logger.info(f"🔍 API 호출 중: melon_song_id={melon_song_id} (song_id={song_id})")
+            logger.debug(f"🔍 API 호출 중: melon_song_id={melon_song_id} (song_id={song_id})")
             
             # 크롤링 실행
             result = crawler.crawl_song(melon_song_id, song_id)
             
             if result:
                 crawled_data.append(result)
-                logger.info(f"✅ 크롤링 완료: {result['song_title']} - {result['artist_name']} (조회수: {result['views']}, 청취자: {result['listeners']})")
+                logger.debug(f"✅ 크롤링 완료: {result['song_title']} - {result['artist_name']} (조회수: {result['views']}, 청취자: {result['listeners']})")
             else:
                 logger.warning(f"❌ 크롤링 실패: melon_song_id={melon_song_id}")
             
