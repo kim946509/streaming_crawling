@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..common.constants import YouTubeMusicSelectors, CommonSettings
 from ..common.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
+from ..common.matching import compare_song_info
 
 logger = logging.getLogger(__name__)
 
@@ -93,13 +94,14 @@ class YouTubeMusicCrawler:
             logger.error(f"❌ YouTube Music 로그인 실패: {e}", exc_info=True)
             return False
     
-    def crawl_song(self, song_title, artist_name):
+    def crawl_song(self, song_title, artist_name, song_id=None):
         """
         단일 곡 크롤링
         
         Args:
             song_title (str): 곡 제목
             artist_name (str): 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 크롤링 결과 또는 None
@@ -115,11 +117,11 @@ class YouTubeMusicCrawler:
                 return None
             
             # 파싱 실행
-            result = self._parse_song_info(html, song_title, artist_name)
+            result = self._parse_song_info(html, song_title, artist_name, song_id)
             return result
             
         except Exception as e:
-            logger.error(f"❌ 곡 크롤링 실패 ({song_title} - {artist_name}): {e}", exc_info=True)
+            logger.error(f"❌ 곡 크롤링 실패 ({artist_name} - {song_title}): {e}", exc_info=True)
             return None
     
     def _search_song(self, song_title, artist_name):
@@ -213,7 +215,7 @@ class YouTubeMusicCrawler:
                 continue
         return None
     
-    def _parse_song_info(self, html, target_song, target_artist):
+    def _parse_song_info(self, html, target_song, target_artist, song_id=None):
         """
         검색 결과 HTML 파싱
         
@@ -221,6 +223,7 @@ class YouTubeMusicCrawler:
             html (str): 검색 결과 HTML
             target_song (str): 검색한 곡명
             target_artist (str): 검색한 아티스트명
+            song_id (str, optional): SongInfo의 pk값
             
         Returns:
             dict: 파싱된 곡 정보 또는 None
@@ -249,35 +252,26 @@ class YouTubeMusicCrawler:
                     # 조회수 추출
                     view_count = self._extract_view_count(item)
 
-                    # 디버그 로깅
-                    normalized_song = normalize_text(song_title)
-                    normalized_target = normalize_text(target_song)
-                    normalized_artist = normalize_text(artist_name)
-                    normalized_target_artist = normalize_text(target_artist)
+                    # 공통 함수를 사용하여 곡 정보 비교
+                    comparison_result = compare_song_info(song_title, artist_name, target_song, target_artist)
                     
-                    logger.debug(f"검사 중: 제목='{song_title}' → '{normalized_song}' vs '{target_song}' → '{normalized_target}'")
-                    logger.debug(f"검사 중: 아티스트='{artist_name}' → '{normalized_artist}' vs '{target_artist}' → '{normalized_target_artist}'")
-
-                    # 정규화된 문자열로 비교
-                    title_match = normalized_song == normalized_target
-                    artist_match = normalized_artist == normalized_target_artist
+                    logger.debug(f"일치 검사: 제목 일치={comparison_result['title_match']}, 아티스트 일치={comparison_result['artist_match']}")
                     
-                    logger.debug(f"일치 검사: 제목 일치={title_match}, 아티스트 일치={artist_match}")
-                    
-                    if title_match and artist_match:
+                    if comparison_result['both_match']:
                         result = {
                             'song_title': song_title,
                             'artist_name': artist_name,
                             'view_count': convert_view_count(view_count),
-                            'crawl_date': get_current_timestamp()
+                            'crawl_date': get_current_timestamp(),
+                            'song_id': song_id
                         }
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
                     else:
-                        if not title_match:
-                            logger.debug(f"제목 불일치: '{normalized_song}' != '{normalized_target}'")
-                        if not artist_match:
-                            logger.debug(f"아티스트 불일치: '{normalized_artist}' != '{normalized_target_artist}'")
+                        if not comparison_result['title_match']:
+                            logger.debug(f"제목 불일치: '{comparison_result['normalized_song']}' != '{comparison_result['normalized_target_song']}'")
+                        if not comparison_result['artist_match']:
+                            logger.debug(f"아티스트 불일치: '{comparison_result['normalized_artist']}' != '{comparison_result['normalized_target_artist']}'")
 
                 except Exception as e:
                     logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")

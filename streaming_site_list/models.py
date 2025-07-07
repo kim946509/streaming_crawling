@@ -15,6 +15,7 @@ class PlatformType(models.TextChoices):
     YOUTUBE = 'youtube', 'YouTube'
     YOUTUBE_MUSIC = 'youtube_music', 'YouTube Music'
 
+
 class BaseModel(models.Model):
     """
     모든 모델의 공통 베이스 클래스
@@ -30,6 +31,7 @@ class SongInfo(BaseModel):
     """
     노래 기본 정보 모델
     """
+
     title = models.CharField(max_length=255, help_text="곡 제목")
     artist = models.CharField(max_length=255, help_text="아티스트명")
     youtube_url = models.URLField(max_length=500, blank=True, null=True, help_text="YouTube URL")
@@ -41,12 +43,13 @@ class SongInfo(BaseModel):
         
     def __str__(self):
         return f"[{self.id}] {self.artist} - {self.title}"
-        
+
 
 class CrawlingPeriod(BaseModel):
     """
     크롤링 기간 관리 모델
     """
+
     song_id = models.CharField(max_length=32, help_text="노래 ID (song_info.id 참조)")
     start_date = models.DateField(help_text="크롤링 시작일")
     end_date = models.DateField(help_text="크롤링 종료일")

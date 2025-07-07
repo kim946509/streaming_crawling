@@ -14,7 +14,7 @@ def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_passwo
     YouTube Music 크롤링 실행
     
     Args:
-        song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명'}, ...]
+        song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명', 'song_id': 'id'}, ...]
         youtube_music_id (str): YouTube Music 로그인 ID
         youtube_music_password (str): YouTube Music 로그인 비밀번호
         save_csv (bool): CSV 저장 여부
@@ -41,11 +41,12 @@ def run_youtube_music_crawling(song_list, youtube_music_id, youtube_music_passwo
             for song_info in song_list:
                 song_title = song_info.get('song_title', '')
                 artist_name = song_info.get('artist_name', '')
+                song_id = song_info.get('song_id')
                 
-                logger.info(f"🔍 검색 중: {song_title} - {artist_name}")
+                logger.info(f"🔍 검색 중: {song_title} - {artist_name} (ID: {song_id})")
                 
-                # 크롤링 실행
-                result = crawler.crawl_song(song_title, artist_name)
+                # 크롤링 실행 (song_id 전달)
+                result = crawler.crawl_song(song_title, artist_name, song_id)
                 
                 if result:
                     crawled_data.append(result)

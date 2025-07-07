@@ -5,10 +5,33 @@
 # Genie 관련 셀렉터
 class GenieSelectors:
     # 검색 관련
-    SEARCH_INPUT = "input[type='search']"
+    SEARCH_INPUT = [
+        "input[type='search']",
+        "input.searchField",
+        "#keyword"
+    ]
     SEARCH_BUTTON = "button[type='submit']"
+    
+    # 곡 정보 관련 (실제 동작하는 셀렉터)
+    SONG_INFO_BUTTON = 'a.btn-basic.btn-info[onclick^="fnViewSongInfo"]'
+    SONG_TITLE = 'h2.name'  # 곡 정보 페이지의 곡명
+    
+    # 아티스트명 추출 selector 리스트
+    ARTIST_SELECTORS = [
+        'a[onclick^="fnGoMore(\'artistInfo\'"]',  # 아티스트 정보 링크
+        'div.info-zone p.artist a',  # 곡 정보 페이지의 아티스트 링크
+        'div.info-zone p.artist',    # 곡 정보 페이지의 아티스트 텍스트
+        'p.artist a',                # 일반적인 아티스트 링크
+        'p.artist',                  # 일반적인 아티스트 텍스트
+        'a.link__text'               # 기존 검색 결과 페이지의 아티스트 링크
+    ]
+    
+    # 곡 정보 페이지 통계 관련
+    TOTAL_STATS = 'div.total'  # 통계 정보 컨테이너
+    TOTAL_STATS_PARAGRAPHS = 'p'  # 통계 수치
+    
+    # 기존 검색 결과 관련 셀렉터들
     SONG_ITEMS = "tr.list__item"
-    SONG_TITLE = "a.link__text"
     ARTIST_NAME = "a.link__text"
     ARTIST_LINK = "td.info a.link__text"
     PLAY_COUNT = "span.count__text"
@@ -75,8 +98,8 @@ class CommonSettings:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     CSV_ENCODING = 'utf-8-sig'
     DEFAULT_WAIT_TIME = 10
-    RANDOM_DELAY_MIN = 0.7
-    RANDOM_DELAY_MAX = 1.5
+    RANDOM_DELAY_MIN = 1.2
+    RANDOM_DELAY_MAX = 2
     
     # Chrome 드라이버 옵션
     CHROME_OPTIONS = [
@@ -114,6 +137,6 @@ class FilePaths:
     LOG_DIR = "logs"
     
     # CSV 파일 컬럼
-    GENIE_COLUMNS = ['song_title', 'artist_name', 'total_person_count', 'total_play_count', 'crawl_date']
-    YOUTUBE_MUSIC_COLUMNS = ['song_title', 'artist_name', 'view_count', 'crawl_date']
-    YOUTUBE_COLUMNS = ['song_id', 'song_title', 'artist_name', 'view_count', 'youtube_url', 'upload_date', 'crawl_date'] 
+    GENIE_COLUMNS = ['song_id','artist_name','song_title','total_person_count', 'view_count', 'crawl_date']
+    YOUTUBE_MUSIC_COLUMNS = ['song_id','artist_name','song_title','view_count', 'crawl_date']
+    YOUTUBE_COLUMNS = ['song_id','artist_name','song_title','view_count', 'youtube_url', 'upload_date', 'crawl_date'] 

@@ -9,19 +9,19 @@ from .youtube_logic import YouTubeCrawler
 
 logger = logging.getLogger(__name__)
 
-def run_youtube_crawling(url_artist_list, save_csv=True, save_db=True):
+def run_youtube_crawling(url_artist_song_id_list, save_csv=True, save_db=True):
     """
     YouTube 크롤링 실행
     
     Args:
-        url_artist_list (list): 크롤링할 URL과 아티스트 리스트 [('url1', 'artist1'), ('url2', 'artist2'), ...]
+        url_artist_song_id_list (list): 크롤링할 URL, 아티스트, song_id 리스트 [('url1', 'artist1', 'song_id1'), ('url2', 'artist2', 'song_id2'), ...]
         save_csv (bool): CSV 저장 여부
         save_db (bool): DB 저장 여부
     
     Returns:
         dict: 크롤링된 데이터 딕셔너리
     """
-    logger.info(f"🖤 YouTube 크롤링 시작 - 총 {len(url_artist_list)}개 URL")
+    logger.info(f"🖤 YouTube 크롤링 시작 - 총 {len(url_artist_song_id_list)}개 URL")
     
     try:
         # Chrome 드라이버 설정 및 실행
@@ -29,7 +29,7 @@ def run_youtube_crawling(url_artist_list, save_csv=True, save_db=True):
             crawler = YouTubeCrawler(driver)
             
             # 크롤링 실행
-            results = crawler.crawl_multiple(url_artist_list)
+            results = crawler.crawl_multiple(url_artist_song_id_list)
             
             logger.info(f"🖤 YouTube 크롤링 완료 - 성공: {len(results)}개")
             
@@ -53,8 +53,8 @@ def run_youtube_crawling(url_artist_list, save_csv=True, save_db=True):
 if __name__ == "__main__":
     # 테스트용 실행
     test_urls = [
-        ("https://www.youtube.com/watch?v=Sv2mIvMwrSY", "Jaerium"),
-        ("https://www.youtube.com/watch?v=R1CZTJ8hW0s", "Jaerium"),
+        ("https://www.youtube.com/watch?v=Sv2mIvMwrSY", "Jaerium", "test_song_id_1"),
+        ("https://www.youtube.com/watch?v=R1CZTJ8hW0s", "Jaerium", "test_song_id_2"),
     ]
     
     results = run_youtube_crawling(test_urls)

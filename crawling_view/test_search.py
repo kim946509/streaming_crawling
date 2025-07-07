@@ -1,6 +1,7 @@
 import os
 import django
 import logging
+import time  # 시간 측정을 위한 모듈 추가
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
@@ -11,18 +12,31 @@ from crawling_view.genie.genie_main import run_genie_crawling
 from crawling_view.youtube.youtube_main import run_youtube_crawling
 
 
+def format_time(seconds):
+    """초를 분:초 형태로 포맷팅"""
+    minutes = int(seconds // 60)
+    remaining_seconds = int(seconds % 60)
+    if minutes > 0:
+        return f"{minutes}분 {remaining_seconds}초"
+    else:
+        return f"{remaining_seconds}초"
+
+
 '''===================== 유튜브 뮤직 테스트(jaerium) ====================='''
 def test_jaerium_youtube_music():
+    start_time = time.time()
+    print(f"🕐 [YouTube Music(Jaerium)] 크롤링 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
     artist_name = "Jaerium"
     song_names = [
         "Cheers to the Future",
         "Softness in the Snow",
-        # "The Frost of Dreams",
-        # "Beneath the Frozen Sky",
+        "The Frost of Dreams",
+        "Beneath the Frozen Sky",
         # "The Wisp of Winter",
         # "Sparkles of the Night",
         # "Soft Breezes in Winter",
-        "The New Year's Moment",
+        # "The New Year's Moment",
         # "Cheers to the Future",
         # "Softness in the Snow",
         # "The Frost of Dreams",
@@ -43,6 +57,13 @@ def test_jaerium_youtube_music():
         save_db=True
     )
     
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"[YouTube Music(Jaerium)] 크롤링 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[YouTube Music(Jaerium)] 총 소요 시간: {format_time(elapsed_time)}")
+    print(f"[YouTube Music(Jaerium)] 곡당 평균 시간: {format_time(elapsed_time / len(song_list)) if song_list else '0초'}")
+    
     logging.info(f"[❤️ YouTube Music(Jaerium)] 크롤링 곡 개수: {len(results)}개")
     for result in results:
         print(f"[YouTubeMusic] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
@@ -51,6 +72,9 @@ def test_jaerium_youtube_music():
 
 '''===================== 유튜브 뮤직 테스트(anonatsue) ====================='''
 def test_anonatsue_youtube_music():
+    start_time = time.time()
+    print(f"🕐 [YouTube Music(Anonatsue)] 크롤링 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
     artist_name = "anonatsue"
     song_names = [
         "Dreamy Orchards",
@@ -87,6 +111,13 @@ def test_anonatsue_youtube_music():
         save_db=True
     )
     
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"🕐 [YouTube Music(Anonatsue)] 크롤링 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"⏱️ [YouTube Music(Anonatsue)] 총 소요 시간: {format_time(elapsed_time)}")
+    print(f"📊 [YouTube Music(Anonatsue)] 곡당 평균 시간: {format_time(elapsed_time / len(song_list)) if song_list else '0초'}")
+    
     logging.info(f"[❤️ YouTube Music(Anonatsue)] 크롤링 곡 개수: {len(results)}개")
     for result in results:
         print(f"[YouTubeMusic] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
@@ -95,7 +126,10 @@ def test_anonatsue_youtube_music():
 
 '''===================== 지니 테스트(jaerium) ====================='''
 def test_genie_jaerium():
-    artist_name = "Jaerium"
+    start_time = time.time()
+    print(f"🕐 [Genie(Jaerium)] 크롤링 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    artist_name = "제이리움"
     song_names = [
         "Beneath the Frozen Sky",
         "The Wisp of Winter",
@@ -116,13 +150,20 @@ def test_genie_jaerium():
     # 새로운 크롤링 함수 호출
     results = run_genie_crawling(song_list, save_csv=True, save_db=True)
     
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"[Genie(Jaerium)] 크롤링 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[Genie(Jaerium)] 총 소요 시간: {format_time(elapsed_time)}")
+    print(f"[Genie(Jaerium)] 곡당 평균 시간: {format_time(elapsed_time / len(song_list)) if song_list else '0초'}")
+    
     logging.info(f"[🩵 Genie(Jaerium)] 크롤링 곡 개수: {len(results)}개")
     for result in results:
         view_count = result.get('view_count', {})
         if isinstance(view_count, dict):
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
                   f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
-                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"전체 재생수: {view_count.get('view_count', 0)}, "
                   f"추출일: {result['crawl_date']}")
         else:
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
@@ -131,6 +172,9 @@ def test_genie_jaerium():
 
 '''===================== 지니 테스트(anonatsue) ====================='''
 def test_genie_anonatsue():
+    start_time = time.time()
+    print(f"🕐 [Genie(Anonatsue)] 크롤링 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
     artist_name = "anonatsue"
     song_names = [
         "Dreamy Orchards",
@@ -161,13 +205,20 @@ def test_genie_anonatsue():
     # 새로운 크롤링 함수 호출
     results = run_genie_crawling(song_list, save_csv=True, save_db=True)
     
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"[Genie(Anonatsue)] 크롤링 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[Genie(Anonatsue)] 총 소요 시간: {format_time(elapsed_time)}")
+    print(f"[Genie(Anonatsue)] 곡당 평균 시간: {format_time(elapsed_time / len(song_list)) if song_list else '0초'}")
+    
     logging.info(f"[🩵 Genie(Anonatsue)] 크롤링 곡 개수: {len(results)}개")
     for result in results:
         view_count = result.get('view_count', {})
         if isinstance(view_count, dict):
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
                   f"전체 청취자수: {view_count.get('total_person_count', 0)}, "
-                  f"전체 재생수: {view_count.get('total_play_count', 0)}, "
+                  f"전체 재생수: {view_count.get('view_count', 0)}, "
                   f"추출일: {result['crawl_date']}")
         else:
             print(f"[Genie] 아티스트: {result['artist_name']}, 곡명: {result['song_title']}, "
@@ -176,13 +227,16 @@ def test_genie_anonatsue():
 
 '''===================== 유튜브 테스트 ====================='''
 def test_youtube():
+    start_time = time.time()
+    print(f"[YouTube] 크롤링 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
     artist_name = "Jaerium"
     song_urls = [
         "https://www.youtube.com/watch?v=Sv2mIvMwrSY",
         "https://www.youtube.com/watch?v=R1CZTJ8hW0s",
         "https://www.youtube.com/watch?v=T4gsXNcF4Z0",
-        "https://www.youtube.com/watch?v=-VQx4dePV5I",
-        "https://www.youtube.com/watch?v=ecTQx5JNZBA",
+        # "https://www.youtube.com/watch?v=-VQx4dePV5I",
+        # "https://www.youtube.com/watch?v=ecTQx5JNZBA",
         # "https://www.youtube.com/watch?v=NiTwT05VgPA",
         # "https://www.youtube.com/watch?v=nZpOGr1C8es",
         # "https://www.youtube.com/watch?v=xpSJnLMCRxc",
@@ -210,6 +264,13 @@ def test_youtube():
     
     # 새로운 크롤링 함수 호출
     results = run_youtube_crawling(url_artist_list, save_csv=True, save_db=True)
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"[YouTube] 크롤링 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[YouTube] 총 소요 시간: {format_time(elapsed_time)}")
+    print(f"[YouTube] 곡당 평균 시간: {format_time(elapsed_time / len(song_urls)) if song_urls else '0초'}")
   
     logging.info(f"[🖤 YouTube] 크롤링 곡 개수: {len(results)}개")
     for song_id, info in results.items():
@@ -219,15 +280,26 @@ def test_youtube():
 
 
 if __name__ == "__main__":
+    total_start_time = time.time()
+    print(f"전체 테스트 시작 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    
     # print("\n===== YouTubeMusic(Jaerium) 테스트 =====")
     # test_jaerium_youtube_music()
     # print("\n===== YouTubeMusic(Anonatsue) 테스트 =====")
     # test_anonatsue_youtube_music()
 
-    # print("\n===== Genie(Jaerium) 테스트 =====")
-    # test_genie_jaerium()
+    print("\n===== Genie(Jaerium) 테스트 =====")
+    test_genie_jaerium()
     # print("\n===== Genie(Anonatsue) 테스트 =====")
     # test_genie_anonatsue()
 
-    print("\n===== YouTube 테스트 =====")
-    test_youtube()
+    # print("\n===== YouTube 테스트 =====")
+    # test_youtube()
+    
+    total_end_time = time.time()
+    total_elapsed_time = total_end_time - total_start_time
+    print("\n" + "=" * 80)
+    print(f"전체 테스트 완료 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"전체 소요 시간: {format_time(total_elapsed_time)}")
+    print("=" * 80)

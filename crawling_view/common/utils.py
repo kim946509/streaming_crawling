@@ -35,10 +35,6 @@ def normalize_text(text):
     # 공백 정규화 및 소문자 변환
     return ' '.join(text.lower().split())
 
-def normalize_song_name(text):
-    """Genie 전용 곡명 정규화"""
-    return re.sub(r'[\W_]+', '', text).lower() if text else ''
-
 def clean_filename(filename):
     """
     파일명에 사용할 수 없는 문자를 제거하고 정리

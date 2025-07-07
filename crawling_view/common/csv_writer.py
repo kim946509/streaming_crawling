@@ -105,12 +105,22 @@ def save_genie_csv(results, company_name="rhoonart"):
         filename = f"{clean_filename(song_title)}.csv"
         filepath = csv_dir / filename
         
+        # view_count 데이터 처리
+        view_count_data = result.get('view_count', {})
+        if isinstance(view_count_data, dict):
+            total_person_count = view_count_data.get('total_person_count', 0)
+            view_count = view_count_data.get('view_count', 0)
+        else:
+            total_person_count = 0
+            view_count = view_count_data if view_count_data else 0
+        
         # DataFrame 생성
         df = pd.DataFrame([{
-            'song_title': result.get('song_title'),
+            'song_id': f"genie_{result.get('artist_name', '')}_{song_title}".lower().replace(' ', '_'),
+            'song_title': song_title,
             'artist_name': result.get('artist_name'),
-            'total_person_count': result.get('view_count', {}).get('total_person_count') if isinstance(result.get('view_count'), dict) else None,
-            'total_play_count': result.get('view_count', {}).get('total_play_count') if isinstance(result.get('view_count'), dict) else None,
+            'total_person_count': total_person_count,
+            'view_count': view_count,
             'crawl_date': result.get('crawl_date')
         }])
         
@@ -160,9 +170,10 @@ def save_youtube_music_csv(results, company_name="rhoonart"):
         
         # DataFrame 생성
         df = pd.DataFrame([{
-            'song_title': result.get('song_title'),
+            'song_id': f"ytmusic_{result.get('artist_name', '')}_{song_title}".lower().replace(' ', '_'),
+            'song_title': song_title,
             'artist_name': result.get('artist_name'),
-            'view_count': result.get('view_count'),
+            'view_count': result.get('view_count', 0),
             'crawl_date': result.get('crawl_date')
         }])
         
@@ -191,7 +202,7 @@ def save_youtube_csv(results, company_name="rhoonart"):
     YouTube 크롤링 결과를 CSV로 저장
     
     Args:
-        results (dict): 크롤링 결과 딕셔너리
+        results (dict): 크롤링 결과 딕셔너리 {song_id: data}
         company_name (str): 회사명
         
     Returns:
@@ -215,7 +226,7 @@ def save_youtube_csv(results, company_name="rhoonart"):
             'song_id': song_id,
             'song_title': result.get('song_name'),
             'artist_name': result.get('artist_name'),
-            'view_count': result.get('view_count'),
+            'view_count': result.get('view_count', 0),
             'youtube_url': result.get('youtube_url'),
             'upload_date': result.get('upload_date'),
             'crawl_date': result.get('extracted_date')

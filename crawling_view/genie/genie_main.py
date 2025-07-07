@@ -14,7 +14,7 @@ def run_genie_crawling(song_list, save_csv=True, save_db=True):
     Genie 크롤링 실행
     
     Args:
-        song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명'}, ...]
+        song_list (list): 크롤링할 곡 리스트 [{'song_title': '곡명', 'artist_name': '가수명', 'song_id': 'id'}, ...]
         save_csv (bool): CSV 저장 여부
         save_db (bool): DB 저장 여부
     
@@ -34,11 +34,12 @@ def run_genie_crawling(song_list, save_csv=True, save_db=True):
             for song_info in song_list:
                 song_title = song_info.get('song_title', '')
                 artist_name = song_info.get('artist_name', '')
+                song_id = song_info.get('song_id')
                 
-                logger.info(f"🔍 검색 중: {song_title} - {artist_name}")
+                logger.info(f"🔍 검색 중: {song_title} - {artist_name} (ID: {song_id})")
                 
-                # 크롤링 실행
-                result = crawler.crawl_song(song_title, artist_name)
+                # 크롤링 실행 (song_id 전달)
+                result = crawler.crawl_song(song_title, artist_name, song_id)
                 
                 if result:
                     crawled_data.append(result)
@@ -73,4 +74,18 @@ if __name__ == "__main__":
     ]
     
     results = run_genie_crawling(test_songs)
+    print(f"크롤링 결과: {len(results)}곡")
+
+    # 개선 (song_id 포함)
+    active_songs = get_active_songs()
+    song_list = [
+        {
+            'song_id': song.id,
+            'song_title': song.song_name, 
+            'artist_name': song.artist_name
+        } 
+        for song in active_songs
+    ]
+    
+    results = run_genie_crawling(song_list)
     print(f"크롤링 결과: {len(results)}곡") 
