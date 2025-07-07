@@ -232,13 +232,14 @@ class GenieCrawler:
                     continue
                 
                 # 조회수 정보 추출
-                view_count = self._extract_view_count(soup)
+                view_data = self._extract_view_count(soup)
                 
                 # 결과 반환 (실제 추출된 정보 사용)
                 result = {
                     'song_title': song_title,
                     'artist_name': artist_name,
-                    'view_count': view_count,
+                    'views': view_data.get('views', -1),
+                    'listeners': view_data.get('listeners', -1),
                     'crawl_date': get_current_timestamp(),
                     'song_id': song_id
                 }
@@ -294,15 +295,15 @@ class GenieCrawler:
                         total_play_count = int(p_tags[1].text.replace(',', '').strip())
                         
                         return {
-                            'total_person_count': total_person_count,
-                            'view_count': total_play_count
+                            'views': total_play_count,
+                            'listeners': total_person_count
                         }
                     except (ValueError, TypeError) as e:
                         logger.warning(f"❌ 청취자수/재생수 변환 실패: {e}")
-                        return {'total_person_count': 0, 'view_count': 0}
+                        return {'views': -999, 'listeners': -999}
             
-            return {'total_person_count': 0, 'view_count': 0}
+            return {'views': -999, 'listeners': -999}
             
         except Exception as e:
             logger.error(f"❌ 조회수 정보 추출 실패: {e}")
-            return {'total_person_count': 0, 'view_count': 0} 
+            return {'views': -999, 'listeners': -999} 

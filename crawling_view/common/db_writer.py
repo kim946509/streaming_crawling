@@ -2,10 +2,7 @@
 DB 저장 관련 함수들
 """
 from django.db import transaction
-from streaming_site_list.genie.models import GenieSongViewCount
-from streaming_site_list.youtube.models import YouTubeSongViewCount
-from streaming_site_list.youtube_music.models import YouTubeMusicSongViewCount
-from streaming_site_list.models import SongInfo
+from streaming_site_list.models import SongInfo, CrawlingData, PlatformType
 from datetime import datetime
 from .constants import CommonSettings
 import logging
@@ -33,41 +30,41 @@ def _validate_and_clean_data(data, platform):
         logger.warning(f"❌ {platform} 필수 데이터 누락: song_id={song_id}")
         return None
     
-    # view_count 처리
-    view_count = data.get('view_count', 0)
-    if view_count is None or view_count == 'None':
-        view_count = 0
-        logger.warning(f"⚠️ {platform} 조회수 데이터가 None: song_id={song_id}")
-    
-    # 딕셔너리인 경우 (Genie 전용 데이터) 변환하지 않음
-    if isinstance(view_count, dict):
-        pass  # 딕셔너리 형태는 그대로 두고 개별 저장 함수에서 처리
+    # views 처리 (필수 데이터)
+    views = data.get('views')
+    if views is None or views == 'None':
+        views = -999  # 오류 (필수 데이터 누락)
+        logger.error(f"❌ {platform} 조회수 데이터 누락: song_id={song_id}")
     else:
         try:
-            view_count = int(view_count) if view_count else 0
+            views = int(views) if views else -999  # 0도 오류로 처리 (데이터가 있어야 함)
         except (ValueError, TypeError):
-            original_view_count = view_count  # 원래 값 보존
-            view_count = 0
-            logger.warning(f"⚠️ {platform} 조회수 변환 실패: song_id={song_id}, 원래값={original_view_count} (type: {type(original_view_count)}), 변환후=0")
+            original_views = views  # 원래 값 보존
+            views = -999  # 오류
+            logger.error(f"❌ {platform} 조회수 변환 실패: song_id={song_id}, 원래값={original_views} (type: {type(original_views)}), 변환후=-999")
     
-    # 추출 날짜 처리
-    extracted_date = data.get('extracted_date') or data.get('crawl_date')
-    if isinstance(extracted_date, str):
+    # listeners 처리 (필수 데이터)
+    listeners = data.get('listeners')
+    if listeners is None or listeners == 'None':
+        listeners = -999  # 오류 (필수 데이터 누락)
+        logger.error(f"❌ {platform} 청취자 수 데이터 누락: song_id={song_id}")
+    else:
         try:
-            if ' ' in extracted_date:
-                extracted_date = extracted_date.split(' ')[0]  # datetime에서 date만 추출
-        except Exception:
-            extracted_date = datetime.now().date()
+            listeners = int(listeners) if listeners else -999  # 0도 오류로 처리 (데이터가 있어야 함)
+        except (ValueError, TypeError):
+            original_listeners = listeners  # 원래 값 보존
+            listeners = -999  # 오류
+            logger.error(f"❌ {platform} 청취자 수 변환 실패: song_id={song_id}, 원래값={original_listeners} (type: {type(original_listeners)}), 변환후=-999")
     
     return {
         'song_id': song_id,
-        'view_count': view_count,
-        'extracted_date': extracted_date
+        'views': views,
+        'listeners': listeners
     }
 
 def get_song_info_id(artist_name, song_name):
     """
-    SongInfo 테이블에서 artist_name과 song_name으로 id 조회
+    SongInfo 테이블에서 artist와 title로 id 조회
     
     Args:
         artist_name (str): 아티스트명
@@ -78,9 +75,8 @@ def get_song_info_id(artist_name, song_name):
     """
     try:
         song_info = SongInfo.objects.get(
-            artist_name=artist_name,
-            song_name=song_name,
-            is_deleted=False
+            artist=artist_name,
+            title=song_name
         )
         logger.debug(f"✅ SongInfo 조회 성공: {song_info.id} - {artist_name} - {song_name}")
         return song_info.id
@@ -124,22 +120,11 @@ def save_genie_to_db(results):
                 skipped_count += 1
                 continue
             
-            # Genie 특별 필드 처리
-            view_count_data = result.get('view_count', {})
-            if isinstance(view_count_data, dict):
-                total_person_count = view_count_data.get('total_person_count', 0)
-                view_count = view_count_data.get('view_count', 0)
-            else:
-                total_person_count = 0
-                view_count = clean_data['view_count']
-            
-            GenieSongViewCount.objects.update_or_create(
+            CrawlingData.objects.create(
                 song_id=clean_data['song_id'],
-                extracted_date=clean_data['extracted_date'],
-                defaults={
-                    'total_person_count': total_person_count,
-                    'view_count': view_count,
-                }
+                views=clean_data['views'],
+                listeners=clean_data['listeners'],
+                platform=PlatformType.GENIE
             )
             saved_count += 1
             logger.debug(f"✅ Genie DB 저장 완료: {clean_data['song_id']}")
@@ -184,12 +169,11 @@ def save_youtube_music_to_db(results):
                 skipped_count += 1
                 continue
             
-            YouTubeMusicSongViewCount.objects.update_or_create(
+            CrawlingData.objects.create(
                 song_id=clean_data['song_id'],
-                extracted_date=clean_data['extracted_date'],
-                defaults={
-                    'view_count': clean_data['view_count'],
-                }
+                views=clean_data['views'],
+                listeners=clean_data['listeners'],
+                platform=PlatformType.YOUTUBE_MUSIC
             )
             saved_count += 1
             logger.debug(f"✅ YouTube Music DB 저장 완료: {clean_data['song_id']}")
@@ -232,26 +216,11 @@ def save_youtube_to_db(results):
                 skipped_count += 1
                 continue
             
-            # upload_date 처리 (YYYY.MM.DD → YYYY-MM-DD 형식 변환)
-            upload_date = result.get('upload_date')
-            if isinstance(upload_date, str):
-                try:
-                    # 'YYYY.MM.DD' 형식을 'YYYY-MM-DD'로 변환
-                    if '.' in upload_date:
-                        upload_date = upload_date.replace('.', '-')
-                    # 시간 부분이 있으면 제거
-                    if ' ' in upload_date:
-                        upload_date = upload_date.split(' ')[0]
-                except Exception:
-                    upload_date = datetime.now().date()
-            
-            YouTubeSongViewCount.objects.update_or_create(
+            CrawlingData.objects.create(
                 song_id=clean_data['song_id'],
-                extracted_date=clean_data['extracted_date'],
-                defaults={
-                    'view_count': clean_data['view_count'],
-                    'upload_date': upload_date,
-                }
+                views=clean_data['views'],
+                listeners=clean_data['listeners'],
+                platform=PlatformType.YOUTUBE
             )
             saved_count += 1
             logger.debug(f"✅ YouTube DB 저장 완료: {clean_data['song_id']}")
