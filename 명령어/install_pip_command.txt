@@ -4,14 +4,7 @@ pip install django
 # DRF 설치
 pip instll djangorestframework
 
-# celery 설치
-pip install celery
 
-# celery beat 설치
-pip install django-celery-beat
-
-# redis 설치
-brew install redis
 
 # selenium 설치
 pip install selenium

@@ -36,17 +36,11 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-
+    'django.contrib.contenttypes',  # 모델 메타데이터용
+    'django.contrib.sessions',      # 세션 (크롤링 시 쿠키 관리용)
+    
     # 앱 추가
-    'streaming_site_list', # 크롤링 결과 저장
-    'streaming_site_list.youtube', # 유튜브 노래 조회수 크롤링
-    'streaming_site_list.youtube_music', # 유튜브 뮤직 노래 조회수 크롤링
-    'streaming_site_list.genie', # 지니 노래 조회수 크롤링
-
-    # Celery Beat
-    'django_celery_beat',
+    'crawling_view',                # 크롤링 시스템
 ]
 
 MIDDLEWARE = [
@@ -146,10 +140,3 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery 설정
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'

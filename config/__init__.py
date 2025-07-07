@@ -1,3 +1,1 @@
-from .celery import app as celery
-
-__all__ = ['celery']
+# Django 크롤링 서버

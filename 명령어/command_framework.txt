@@ -1,14 +1,8 @@
-# celery worker 시작 명령어
-celery -A "celery.py가 있는 폴더명" worker --loglevel=info
+# 크롤링 실행 명령어
+python manage.py run_crawling_job
 
-# celery beat 시작 명령어
-celery -A "celery.py가 있는 폴더명" beat --loglevel=info
+# 플랫폼별 크롤링 테스트
+python crawling_view/test/test_platform_crawlers.py [platform]
 
-# redis 실행 명령어
-brew services start redis
-
-# redis 실행 확인 명령어
-redis-cli ping #PONG
-
-# redis 종료 명령어
-brew redis stop redis
+# 전체 크롤링 테스트
+python crawling_view/test/test_full_crawling.py
