@@ -51,14 +51,26 @@ class YouTubeMusicSelectors:
     SEARCH_BUTTON = [
         'button#button[aria-label="검색 시작"]',
         'button[aria-label="검색"]',
+        'button[aria-label="Search"]',  # 영어 aria-label
+        'button[aria-label*="검색"]',  # 검색이 포함된 aria-label
+        'button[aria-label*="Search"]',  # Search가 포함된 aria-label
         'yt-icon-button.search-button',  # 검색 버튼 클래스
         'button#button.style-scope.yt-icon-button[aria-label="검색 시작"]',  # 전체 클래스 포함
+        'button#button.style-scope.yt-icon-button[aria-label="Search"]',  # 영어 버전
         'yt-icon-button[title="검색 시작"]',  # 타이틀로 검색
-        'button.style-scope.yt-icon-button'  # 일반적인 yt-icon-button
+        'yt-icon-button[title="Search"]',  # 영어 타이틀
+        'button.style-scope.yt-icon-button',  # 일반적인 yt-icon-button
+        'yt-icon-button[aria-label]',  # aria-label이 있는 모든 yt-icon-button
+        'button[aria-label]',  # aria-label이 있는 모든 button
+        'yt-icon-button',  # 모든 yt-icon-button (마지막 fallback)
+        'button#button'  # 모든 button#button (최후의 fallback)
     ]
     SEARCH_INPUT = [
         'input#input',
         'input[aria-label="검색"]',
+        'input[aria-label="Search"]',  # 영어 aria-label
+        'input[aria-label*="검색"]',  # 검색이 포함된 aria-label
+        'input[aria-label*="Search"]',  # Search가 포함된 aria-label
         'span#placeholder[aria-hidden="true"]',  # 새로운 검색 placeholder
         'span.style-scope.ytmusic-search-box',   # 검색 박스 스타일 클래스
         'ytmusic-search-box input',              # YouTube Music 검색 박스 내부 input
@@ -67,9 +79,26 @@ class YouTubeMusicSelectors:
         'input[aria-autocomplete="list"]',       # aria-autocomplete list인 input
         'input[aria-controls="suggestion-list"]', # suggestion-list 컨트롤하는 input
         'input[role="combobox"]',                # combobox 역할의 input
-        'input.style-scope.ytmusic-search-box'   # ytmusic-search-box 스타일 클래스 input
+        'input.style-scope.ytmusic-search-box',  # ytmusic-search-box 스타일 클래스 input
+        'input[type="search"]',                  # search 타입 input
+        'input[placeholder*="검색"]',            # 검색이 포함된 placeholder
+        'input[placeholder*="Search"]',          # Search가 포함된 placeholder
+        'input[placeholder]',                    # placeholder가 있는 모든 input
+        'input'                                  # 모든 input (최후의 fallback)
     ]
-    SONG_TAB = '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a'
+    SONG_TAB = [
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a',  # 한글
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="Songs"]/ancestor::a',  # 영어
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[contains(text(), "노래")]/ancestor::a',  # 한글 포함
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[contains(text(), "Songs")]/ancestor::a',  # 영어 포함
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a[contains(@aria-label, "노래")]',  # aria-label으로 한글
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a[contains(@aria-label, "Songs")]',  # aria-label으로 영어
+        '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and text()="노래"]/ancestor::a',  # 실제 HTML 구조 한글
+        '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and text()="Songs"]/ancestor::a',  # 실제 HTML 구조 영어
+        '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and contains(text(), "노래")]/ancestor::a',  # 실제 HTML 구조 한글 포함
+        '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and contains(text(), "Songs")]/ancestor::a',  # 실제 HTML 구조 영어 포함
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a',  # 모든 탭 (fallback)
+    ]
     
     # 곡 정보 추출 관련
     SONG_ITEMS = 'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer'

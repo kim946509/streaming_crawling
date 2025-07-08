@@ -50,11 +50,11 @@ COPY logging_setting.py .
 # 로그 디렉토리 생성
 RUN mkdir -p logs csv_folder
 
-# cron 작업 설정 (하루 8번: 00시, 03시, 06시, 09시, 12시, 15시, 18시, 21시)
+# cron 작업 설정 (30분마다 실행)
 # cron에서 환경변수를 사용하기 위해 환경변수를 cron 환경에 추가
 RUN echo "SHELL=/bin/bash" > /etc/cron.d/crawling-cron \
     && echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> /etc/cron.d/crawling-cron \
-    && echo "0 0,3,6,9,12,15,18,21 * * * cd /app && export DJANGO_SETTINGS_MODULE=config.settings && python3 crawling_view/controller/run_crawling.py >> /app/logs/cron.log 2>&1" >> /etc/cron.d/crawling-cron \
+    && echo "*/30 * * * * /app/scripts/run_crawling.sh >> /app/logs/cron.log 2>&1" >> /etc/cron.d/crawling-cron \
     && chmod 0644 /etc/cron.d/crawling-cron \
     && crontab /etc/cron.d/crawling-cron
 

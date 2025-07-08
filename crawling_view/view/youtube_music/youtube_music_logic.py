@@ -285,35 +285,115 @@ class YouTubeMusicCrawler:
             
             for attempt in range(max_attempts):
                 try:
+                    logger.info(f"🔍 검색 시도 {attempt+1}/{max_attempts}")
+                    
+                    # 페이지 로딩 대기
+                    self._wait_for_page_load()
+                    
                     # 검색 버튼 찾기 및 클릭
                     search_button = self._find_search_button()
                     if not search_button:
                         raise Exception("검색 버튼을 찾을 수 없습니다.")
                     
-                    search_button.click()
-                    time.sleep(2)
+                    # 검색 버튼이 화면에 보이는지 확인
+                    if not search_button.is_displayed():
+                        raise Exception("검색 버튼이 화면에 보이지 않습니다.")
+                    
+                    # JavaScript로 클릭 시도 (더 안정적)
+                    try:
+                        self.driver.execute_script("arguments[0].click();", search_button)
+                        logger.info("✅  검색 버튼 클릭 성공")
+                    except Exception as e:
+                        logger.warning(f"⚠️ 클릭 실패, 일반 클릭 시도: {e}")
+                        search_button.click()
+                    
+                    time.sleep(1)  
                     
                     # 검색어 입력
                     search_input = self._find_search_input()
                     if not search_input:
                         raise Exception("검색 입력창을 찾을 수 없습니다.")
                     
-                    search_input.clear()
-                    time.sleep(0.5)
-                    search_input.send_keys(query)
-                    time.sleep(1)
-                    search_input.send_keys(Keys.RETURN)
+                    # 검색 입력창이 활성화될 때까지 대기
+                    try:
+                        self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, search_input.tag_name)))
+                    except Exception as e:
+                        logger.warning(f"⚠️ 검색 입력창 활성화 대기 실패: {e}")
+                    
+                    # 검색어 입력 전에 입력창 상태 확인
+                    try:
+                        # 입력창이 비어있는지 확인
+                        current_value = search_input.get_attribute('value') or ''
+                        if current_value:
+                            logger.info(f"🔍 기존 검색어 제거: '{current_value}'")
+                            search_input.clear()
+                            time.sleep(1)
+                    except Exception as e:
+                        logger.warning(f"⚠️ 기존 검색어 제거 실패: {e}")
+                    
+                    # 검색어 입력 (더 안전한 방법)
+                    try:
+                        # JavaScript로 값 설정 시도
+                        self.driver.execute_script("arguments[0].value = arguments[1];", search_input, query)
+                        logger.info("✅ JavaScript로 검색어 입력 성공")
+                    except Exception as e:
+                        logger.warning(f"⚠️ JavaScript 입력 실패, 일반 입력 시도: {e}")
+                        search_input.send_keys(query)
+                    
                     time.sleep(2)
                     
-                    # "노래" 탭 클릭
-                    song_tab = self.wait.until(
-                        EC.element_to_be_clickable((
-                            By.XPATH,
-                            YouTubeMusicSelectors.SONG_TAB
-                        ))
-                    )
-                    song_tab.click()
-                    time.sleep(1)
+                    # Enter 키 입력 (더 안전한 방법)
+                    try:
+                        # JavaScript로 Enter 이벤트 발생
+                        self.driver.execute_script("""
+                            var event = new KeyboardEvent('keydown', {
+                                key: 'Enter',
+                                code: 'Enter',
+                                keyCode: 13,
+                                which: 13,
+                                bubbles: true,
+                                cancelable: true
+                            });
+                            arguments[0].dispatchEvent(event);
+                        """, search_input)
+                        logger.info("✅ JavaScript로 Enter 키 이벤트 발생 성공")
+                    except Exception as e:
+                        logger.warning(f"⚠️ JavaScript Enter 이벤트 실패, 일반 Enter 시도: {e}")
+                        search_input.send_keys(Keys.RETURN)
+                    
+                    time.sleep(1)  # 원래 대기 시간으로 복원
+                    
+                    # "노래" 탭 클릭 (다국어 지원)
+                    song_tab_clicked = False
+                    for song_tab_selector in YouTubeMusicSelectors.SONG_TAB:
+                        try:
+                            logger.debug(f"🔍 노래 탭 셀렉터 시도: {song_tab_selector}")
+                            song_tab = self.wait.until(
+                                EC.element_to_be_clickable((
+                                    By.XPATH,
+                                    song_tab_selector
+                                ))
+                            )
+                            
+                            # 탭이 화면에 보이는지 확인
+                            if not song_tab.is_displayed():
+                                logger.debug(f"❌ 노래 탭이 화면에 보이지 않음: {song_tab_selector}")
+                                continue
+                            
+                            # JavaScript로 클릭 시도
+                            self.driver.execute_script("arguments[0].click();", song_tab)
+                            logger.info(f"✅ JavaScript로 노래 탭 클릭 성공: {song_tab_selector}")
+                            song_tab_clicked = True
+                            break
+                            
+                        except Exception as e:
+                            logger.debug(f"❌ 노래 탭 셀렉터 실패: {song_tab_selector} - {str(e)}")
+                            continue
+                    
+                    if not song_tab_clicked:
+                        logger.warning("⚠️ 모든 노래 탭 셀렉터 실패, 탭 클릭 없이 계속 진행")
+                    
+                    time.sleep(1)  # 원래 대기 시간으로 복원
                     
                     # HTML 반환
                     html = self.driver.page_source
@@ -339,24 +419,58 @@ class YouTubeMusicCrawler:
         """검색 버튼 찾기"""
         for selector in YouTubeMusicSelectors.SEARCH_BUTTON:
             try:
+                logger.debug(f"🔍 검색 버튼 셀렉터 시도: {selector}")
                 search_button = self.wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
                 )
+                logger.info(f"✅ 검색 버튼 찾기 성공: {selector}")
                 return search_button
-            except Exception:
+            except Exception as e:
+                logger.debug(f"❌ 검색 버튼 셀렉터 실패: {selector} - {str(e)}")
                 continue
+        
+        # 모든 셀렉터 실패 시 현재 페이지 상태 로깅
+        logger.error("❌ 모든 검색 버튼 셀렉터 실패")
+        self._log_page_state()
         return None
     
     def _find_search_input(self):
         """검색 입력창 찾기"""
         for selector in YouTubeMusicSelectors.SEARCH_INPUT:
             try:
+                logger.debug(f"🔍 검색 입력창 셀렉터 시도: {selector}")
+                
+                # 먼저 요소가 존재하는지 확인
                 search_input = self.wait.until(
-                    EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
+                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
                 )
+                
+                # 요소가 화면에 보이는지 확인
+                if not search_input.is_displayed():
+                    logger.debug(f"❌ 검색 입력창이 화면에 보이지 않음: {selector}")
+                    continue
+                
+                # 요소가 상호작용 가능한지 확인
+                if not search_input.is_enabled():
+                    logger.debug(f"❌ 검색 입력창이 비활성화됨: {selector}")
+                    continue
+                
+                # 입력창의 속성 확인
+                input_type = search_input.get_attribute('type') or ''
+                if input_type == 'hidden':
+                    logger.debug(f"❌ 검색 입력창이 숨겨진 상태: {selector}")
+                    continue
+                
+                logger.info(f"✅ 검색 입력창 찾기 성공: {selector}")
                 return search_input
-            except Exception:
+                
+            except Exception as e:
+                logger.debug(f"❌ 검색 입력창 셀렉터 실패: {selector} - {str(e)}")
                 continue
+        
+        # 모든 셀렉터 실패 시 현재 페이지 상태 로깅
+        logger.error("❌ 모든 검색 입력창 셀렉터 실패")
+        self._log_page_state()
         return None
     
     def _parse_song_info(self, html, target_song, target_artist, song_id=None):
@@ -481,3 +595,62 @@ class YouTubeMusicCrawler:
         except Exception as e:
             logger.error(f"❌ 조회수 추출 실패: {e}")
             return None
+    
+    def _log_page_state(self):
+        """현재 페이지 상태 로깅 (디버깅용)"""
+        try:
+            current_url = self.driver.current_url
+            page_title = self.driver.title
+            logger.info(f"📄 현재 URL: {current_url}")
+            logger.info(f"📄 페이지 제목: {page_title}")
+            
+            # 검색 관련 요소들 확인
+            search_elements = self.driver.find_elements(By.CSS_SELECTOR, '[aria-label*="검색"], [aria-label*="Search"], yt-icon-button, button#button')
+            logger.info(f"🔍 검색 관련 요소 개수: {len(search_elements)}")
+            
+            for i, elem in enumerate(search_elements[:5]):  # 처음 5개만 로깅
+                try:
+                    aria_label = elem.get_attribute('aria-label') or 'N/A'
+                    tag_name = elem.tag_name
+                    is_displayed = elem.is_displayed()
+                    is_enabled = elem.is_enabled()
+                    logger.info(f"  요소 {i+1}: {tag_name} - aria-label: {aria_label} - 표시: {is_displayed} - 활성: {is_enabled}")
+                except Exception:
+                    logger.info(f"  요소 {i+1}: 정보 추출 실패")
+            
+            # 검색 입력창 관련 요소들 확인
+            input_elements = self.driver.find_elements(By.CSS_SELECTOR, 'input[type="search"], input[aria-autocomplete], input[role="combobox"]')
+            logger.info(f"🔍 검색 입력창 관련 요소 개수: {len(input_elements)}")
+            
+            for i, elem in enumerate(input_elements[:3]):  # 처음 3개만 로깅
+                try:
+                    input_type = elem.get_attribute('type') or 'N/A'
+                    aria_autocomplete = elem.get_attribute('aria-autocomplete') or 'N/A'
+                    role = elem.get_attribute('role') or 'N/A'
+                    placeholder = elem.get_attribute('placeholder') or 'N/A'
+                    is_displayed = elem.is_displayed()
+                    is_enabled = elem.is_enabled()
+                    logger.info(f"  입력창 {i+1}: type={input_type}, aria-autocomplete={aria_autocomplete}, role={role}, placeholder={placeholder}, 표시: {is_displayed}, 활성: {is_enabled}")
+                except Exception:
+                    logger.info(f"  입력창 {i+1}: 정보 추출 실패")
+            
+            # 페이지 소스 일부 저장 (디버깅용)
+            page_source = self.driver.page_source
+            if len(page_source) > 1000:
+                logger.debug(f"📄 페이지 소스 (처음 1000자): {page_source[:1000]}...")
+            else:
+                logger.debug(f"📄 페이지 소스: {page_source}")
+                
+        except Exception as e:
+            logger.error(f"❌ 페이지 상태 로깅 실패: {e}")
+    
+    def _wait_for_page_load(self, timeout=10):
+        """페이지 로딩 완료 대기"""
+        try:
+            # DOM이 준비될 때까지 대기
+            self.wait.until(lambda driver: driver.execute_script("return document.readyState") == "complete")
+            logger.debug("✅ 페이지 로딩 완료")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ 페이지 로딩 대기 실패: {e}")
+            return False
