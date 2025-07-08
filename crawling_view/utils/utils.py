@@ -102,10 +102,12 @@ def get_current_timestamp():
 
 def convert_view_count(view_count_text):
     """
-    조회수 텍스트를 숫자로 변환
+    조회수 텍스트를 숫자로 변환 (한글/영어 모두 지원)
     
     Args:
-        view_count_text (str): 조회수 텍스트 (예: "1.5만 회", "2.3천 회", "1,234회")
+        view_count_text (str): 조회수 텍스트 
+        - 한글: "1.5만 회", "2.3천 회", "1,234회"
+        - 영어: "1.5M views", "2.3K views", "1,234 views"
         
     Returns:
         int: 변환된 숫자 또는 None
@@ -113,17 +115,27 @@ def convert_view_count(view_count_text):
     if not view_count_text:
         return None
         
-    # 쉼표, "조회수", "회" 제거
-    view_count_text = view_count_text.replace(',', '').replace('조회수', '').replace('회', '').strip()
+    # 소문자 변환 및 공통 문자 제거
+    view_count_text = view_count_text.lower()
+    view_count_text = view_count_text.replace(',', '').replace('조회수', '').replace('회', '').replace('views', '').replace('view', '').strip()
     
     try:
-        # "만" 단위 처리
+        # 한글 단위 처리
         if '만' in view_count_text:
             number = float(view_count_text.replace('만', ''))
             return int(number * 10000)
-        # "천" 단위 처리
         elif '천' in view_count_text:
             number = float(view_count_text.replace('천', ''))
+            return int(number * 1000)
+        # 영어 단위 처리
+        elif 'b' in view_count_text:  # billion
+            number = float(view_count_text.replace('b', ''))
+            return int(number * 1000000000)
+        elif 'm' in view_count_text:  # million
+            number = float(view_count_text.replace('m', ''))
+            return int(number * 1000000)
+        elif 'k' in view_count_text:  # thousand
+            number = float(view_count_text.replace('k', ''))
             return int(number * 1000)
         # 일반 숫자 처리
         else:
