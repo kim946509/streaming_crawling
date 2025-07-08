@@ -10,6 +10,7 @@ from crawling_view.view.youtube.youtube_main import run_youtube_crawling
 from crawling_view.view.youtube_music.youtube_music_main import run_youtube_music_crawling
 from crawling_view.view.melon.melon_main import run_melon_crawling
 from crawling_view.models import SongInfo
+from crawling_view.utils.constants import Platforms
 
 logger = logging.getLogger(__name__)
 
@@ -149,18 +150,18 @@ def create_crawler(platform: str):
     플랫폼별 크롤러 생성
     
     Args:
-        platform: 플랫폼명 ('genie', 'youtube_music', 'youtube', 'melon')
+        platform: 플랫폼명 (Platforms.ALL_PLATFORMS 참조)
         
     Returns:
         BasePlatformCrawler: 해당 플랫폼의 크롤러
     """
-    if platform == 'genie':
+    if platform == Platforms.GENIE:
         return GenieCrawler()
-    elif platform == 'youtube_music':
+    elif platform == Platforms.YOUTUBE_MUSIC:
         return YouTubeMusicCrawler()
-    elif platform == 'youtube':
+    elif platform == Platforms.YOUTUBE:
         return YouTubeCrawler()
-    elif platform == 'melon':
+    elif platform == Platforms.MELON:
         return MelonCrawler()
     else:
         raise ValueError(f"지원하지 않는 플랫폼: {platform}")

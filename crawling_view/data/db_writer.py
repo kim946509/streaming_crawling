@@ -4,7 +4,7 @@ DB 저장 관련 함수들
 from django.db import transaction
 from crawling_view.models import SongInfo, CrawlingData, PlatformType
 from datetime import datetime
-from crawling_view.utils.constants import CommonSettings
+from crawling_view.utils.constants import CommonSettings, Platforms
 import logging
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ def get_song_info_id(platform, **kwargs):
         str: SongInfo의 id 또는 None
     """
     try:
-        if platform == 'genie':
+        if platform == Platforms.GENIE:
             # Genie는 artist와 title로 조회
             artist_name = kwargs.get('artist_name')
             song_name = kwargs.get('song_name')
@@ -112,7 +112,7 @@ def get_song_info_id(platform, **kwargs):
             # SongInfo 조회 성공은 디버그 레벨로 변경
             pass
             
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             # YouTube는 URL로만 조회
             url = kwargs.get('url')
             if not url:
@@ -123,7 +123,7 @@ def get_song_info_id(platform, **kwargs):
             # SongInfo 조회 성공은 디버그 레벨로 변경
             pass
                 
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             # YouTube Music은 artist와 title로 조회
             artist_name = kwargs.get('artist_name')
             song_name = kwargs.get('song_name')

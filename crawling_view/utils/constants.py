@@ -109,6 +109,25 @@ class YouTubeSelectors:
         'yt-formatted-string#info-strings'
     ]
 
+# 플랫폼 관련 상수
+class Platforms:
+    """지원하는 크롤링 플랫폼"""
+    GENIE = 'genie'
+    YOUTUBE_MUSIC = 'youtube_music'
+    YOUTUBE = 'youtube'
+    MELON = 'melon'
+    
+    # 전체 플랫폼 리스트
+    ALL_PLATFORMS = [GENIE, YOUTUBE_MUSIC, YOUTUBE, MELON]
+    
+    # 플랫폼별 이름 매핑
+    PLATFORM_NAMES = {
+        GENIE: 'Genie',
+        YOUTUBE_MUSIC: 'YouTube Music',
+        YOUTUBE: 'YouTube',
+        MELON: 'Melon'
+    }
+
 # 공통 설정
 class CommonSettings:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'

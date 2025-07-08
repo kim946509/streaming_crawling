@@ -3,6 +3,7 @@
 """
 from django.db import models
 from .base import BaseModel
+from crawling_view.utils.constants import Platforms
 
 class SongInfo(BaseModel):
     """
@@ -34,24 +35,24 @@ class SongInfo(BaseModel):
         Returns:
             dict: 플랫폼별 정보
         """
-        if platform == 'melon':
+        if platform == Platforms.MELON:
             return {
                 'song_id': self.melon_song_id,
                 'title': self.youtube_music_title,  # YouTube Music 정보로 대체
                 'artist': self.youtube_music_artist  # YouTube Music 정보로 대체
             }
-        elif platform == 'genie':
+        elif platform == Platforms.GENIE:
             return {
                 'title': self.genie_title,
                 'artist': self.genie_artist
             }
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             return {
                 'url': self.youtube_url,
                 'title': self.youtube_music_title,  # YouTube Music 정보로 대체
                 'artist': self.youtube_music_artist  # YouTube Music 정보로 대체
             }
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             return {
                 'title': self.youtube_music_title,
                 'artist': self.youtube_music_artist
@@ -72,13 +73,13 @@ class SongInfo(BaseModel):
         Returns:
             bool: 크롤링 가능 여부
         """
-        if platform == 'melon':
+        if platform == Platforms.MELON:
             return bool(self.melon_song_id)
-        elif platform == 'genie':
+        elif platform == Platforms.GENIE:
             return bool(self.genie_title and self.genie_artist)
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             return bool(self.youtube_url)
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             return bool(self.youtube_music_title and self.youtube_music_artist)
         else:
             return False 

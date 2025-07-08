@@ -12,6 +12,7 @@ from crawling_view.data.song_service import SongService
 from crawling_view.data.db_writer import save_genie_to_db, save_youtube_to_db, save_youtube_music_to_db, save_melon_to_db
 from crawling_view.data.csv_writer import save_genie_csv, save_youtube_csv, save_youtube_music_csv, save_melon_csv
 from crawling_view.controller.platform_crawlers import create_crawler
+from crawling_view.utils.constants import Platforms
 
 logger = logging.getLogger(__name__)
 
@@ -163,25 +164,25 @@ def run_platform_crawling(platform, target_date=None):
         crawling_results = crawler.crawl_songs(crawling_data)
         
         # 3단계: DB 저장
-        if platform == 'genie':
+        if platform == Platforms.GENIE:
             db_results = save_genie_to_db(crawling_results)
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             db_results = save_youtube_music_to_db(crawling_results)
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             db_results = save_youtube_to_db(crawling_results)
-        elif platform == 'melon':
+        elif platform == Platforms.MELON:
             db_results = save_melon_to_db(crawling_results)
         else:
             db_results = {'error': '지원하지 않는 플랫폼'}
         
         # 4단계: CSV 저장
-        if platform == 'genie':
+        if platform == Platforms.GENIE:
             csv_results = save_genie_csv(crawling_results)
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             csv_results = save_youtube_music_csv(crawling_results)
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             csv_results = save_youtube_csv(crawling_results)
-        elif platform == 'melon':
+        elif platform == Platforms.MELON:
             csv_results = save_melon_csv(crawling_results)
         else:
             csv_results = {'error': '지원하지 않는 플랫폼'}

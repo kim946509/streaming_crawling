@@ -16,6 +16,7 @@ django.setup()
 
 from crawling_view.controller.crawling_manager import run_crawling, run_platform_crawling
 from crawling_view.data.song_service import SongService
+from crawling_view.utils.constants import Platforms
 
 # 로깅 설정
 logging.basicConfig(
@@ -114,7 +115,7 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
         total_saved_csv = 0
         total_failed = 0
         
-        for platform in ['genie', 'youtube_music', 'youtube', 'melon']:
+        for platform in Platforms.ALL_PLATFORMS:
             platform_data = {
                 'crawled_count': 0,
                 'db_saved': 0,
@@ -158,7 +159,7 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
         
         # 전체 요약
         # 성공률은 실제 대상 곡 수 기준으로 계산 (플랫폼 수로 나누기)
-        platform_count = len([p for p in ['genie', 'youtube_music', 'youtube', 'melon'] if p in crawling_results])
+        platform_count = len([p for p in Platforms.ALL_PLATFORMS if p in crawling_results])
         actual_success_songs = total_crawled // max(platform_count, 1) if platform_count > 0 else 0
         total_crawling_failed = max(0, analysis['total_songs'] - actual_success_songs)
         
@@ -280,7 +281,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='크롤링 프로세스 실행')
-    parser.add_argument('--platform', choices=['genie', 'youtube', 'youtube_music', 'melon'], 
+    parser.add_argument('--platform', choices=Platforms.ALL_PLATFORMS, 
                        help='특정 플랫폼만 크롤링')
     parser.add_argument('--date', type=str, help='크롤링 대상 날짜 (YYYY-MM-DD 형식)')
     

@@ -3,6 +3,7 @@
 """
 from datetime import date
 from crawling_view.models import SongInfo, CrawlingPeriod
+from crawling_view.utils.constants import Platforms
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,10 +69,10 @@ class SongService:
         Returns:
             list: 필터링된 SongInfo 객체 리스트
         """
-        if platform == 'youtube':
+        if platform == Platforms.YOUTUBE:
             # YouTube URL이 있는 곡들만 필터링
-            return [song for song in songs if song.is_platform_available('youtube')]
-        elif platform in ['genie', 'youtube_music', 'melon']:
+            return [song for song in songs if song.is_platform_available(platform)]
+        elif platform in [Platforms.GENIE, Platforms.YOUTUBE_MUSIC, Platforms.MELON]:
             # 해당 플랫폼 정보가 있는 곡들만 필터링
             return [song for song in songs if song.is_platform_available(platform)]
         else:
@@ -90,40 +91,40 @@ class SongService:
         Returns:
             list: 크롤링 형식의 데이터 리스트
         """
-        if platform == 'genie':
+        if platform == Platforms.GENIE:
             return [
                 {
                     'song_id': song.id,
-                    'song_title': song.get_platform_info('genie')['title'],
-                    'artist_name': song.get_platform_info('genie')['artist']
+                    'song_title': song.get_platform_info(platform)['title'],
+                    'artist_name': song.get_platform_info(platform)['artist']
                 }
                 for song in songs
-                if song.is_platform_available('genie')
+                if song.is_platform_available(platform)
             ]
-        elif platform == 'youtube_music':
+        elif platform == Platforms.YOUTUBE_MUSIC:
             return [
                 {
                     'song_id': song.id,
-                    'song_title': song.get_platform_info('youtube_music')['title'],
-                    'artist_name': song.get_platform_info('youtube_music')['artist']
+                    'song_title': song.get_platform_info(platform)['title'],
+                    'artist_name': song.get_platform_info(platform)['artist']
                 }
                 for song in songs
-                if song.is_platform_available('youtube_music')
+                if song.is_platform_available(platform)
             ]
-        elif platform == 'youtube':
+        elif platform == Platforms.YOUTUBE:
             return [
-                (song.get_platform_info('youtube')['url'], song.get_platform_info('youtube')['artist'], song.id)
+                (song.get_platform_info(platform)['url'], song.get_platform_info(platform)['artist'], song.id)
                 for song in songs
-                if song.is_platform_available('youtube')
+                if song.is_platform_available(platform)
             ]
-        elif platform == 'melon':
+        elif platform == Platforms.MELON:
             return [
                 {
                     'song_id': song.id,
-                    'melon_song_id': song.get_platform_info('melon')['song_id']
+                    'melon_song_id': song.get_platform_info(platform)['song_id']
                 }
                 for song in songs
-                if song.is_platform_available('melon')
+                if song.is_platform_available(platform)
             ]
         else:
             logger.warning(f"❌ 알 수 없는 플랫폼: {platform}")
