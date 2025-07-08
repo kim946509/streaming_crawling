@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     libmysqlclient-dev \
+    locales \
     && rm -rf /var/lib/apt/lists/*
 
 # Chrome 설치

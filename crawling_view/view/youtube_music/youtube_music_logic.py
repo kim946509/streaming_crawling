@@ -465,24 +465,40 @@ class YouTubeMusicCrawler:
         return None
     
     def _parse_song_info(self, html, target_song, target_artist, song_id=None):
-        """
-        검색 결과 HTML 파싱
-        
-        Args:
-            html (str): 검색 결과 HTML
-            target_song (str): 검색한 곡명
-            target_artist (str): 검색한 아티스트명
-            song_id (str, optional): SongInfo의 pk값
-            
-        Returns:
-            dict: 파싱된 곡 정보 또는 None
-        """
         try:
             logger.info(f"[파싱] '{target_artist} - {target_song}' 정보 추출 시도 중...")
+            
+            # HTML을 임시 파일로 저장
+            import os
+            import tempfile
+            from datetime import datetime
+            
+            # 임시 파일 생성 (temp 폴더에)
+            temp_dir = "temp"
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{temp_dir}/youtube_music_search_{timestamp}.html"
+            
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(self.driver.page_source)
+            logger.info(f"🔍 검색 결과 HTML 저장됨: {filename}")
             
             soup = make_soup(html)
             if not soup:
                 return None
+            
+            # 디버깅: 실제 HTML 구조 로깅
+            logger.debug("=== 페이지 HTML 구조 분석 시작 ===")
+            # ytmusic-responsive-list-item-renderer 태그 찾기
+            all_items = soup.find_all('ytmusic-responsive-list-item-renderer')
+            logger.debug(f"발견된 ytmusic-responsive-list-item-renderer 태그 수: {len(all_items)}")
+            
+            if all_items:
+                sample_item = all_items[0]
+                logger.debug(f"첫 번째 아이템의 클래스: {sample_item.get('class', [])}")
+                logger.debug(f"첫 번째 아이템의 속성들: {sample_item.attrs}")
             
             # 여러 셀렉터를 시도하여 검색 결과 찾기
             song_items = []
@@ -491,6 +507,7 @@ class YouTubeMusicCrawler:
                 if items:
                     song_items = items
                     logger.info(f"🔍 YouTube Music 검색 결과: {len(song_items)}개 곡 발견 (셀렉터: {selector})")
+                    logger.debug(f"매칭된 첫 번째 아이템 HTML: {items[0]}")
                     break
             
             if not song_items:

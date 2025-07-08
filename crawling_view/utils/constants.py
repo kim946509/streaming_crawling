@@ -55,38 +55,44 @@ class YouTubeMusicSelectors:
         'button[aria-label*="검색"]',  # 검색이 포함된 aria-label
         'button[aria-label*="Search"]',  # Search가 포함된 aria-label
         'yt-icon-button.search-button',  # 검색 버튼 클래스
-        'button#button.style-scope.yt-icon-button[aria-label="검색 시작"]',  # 전체 클래스 포함
-        'button#button.style-scope.yt-icon-button[aria-label="Search"]',  # 영어 버전
-        'yt-icon-button[title="검색 시작"]',  # 타이틀로 검색
-        'yt-icon-button[title="Search"]',  # 영어 타이틀
-        'button.style-scope.yt-icon-button',  # 일반적인 yt-icon-button
-        'yt-icon-button[aria-label]',  # aria-label이 있는 모든 yt-icon-button
-        'button[aria-label]',  # aria-label이 있는 모든 button
-        'yt-icon-button',  # 모든 yt-icon-button (마지막 fallback)
-        'button#button'  # 모든 button#button (최후의 fallback)
+        # 'button#button.style-scope.yt-icon-button[aria-label="검색 시작"]',  # 전체 클래스 포함
+        # 'button#button.style-scope.yt-icon-button[aria-label="Search"]',  # 영어 버전
+        # 'yt-icon-button[title="검색 시작"]',  # 타이틀로 검색
+        # 'yt-icon-button[title="Search"]',  # 영어 타이틀
+        # 'button.style-scope.yt-icon-button',  # 일반적인 yt-icon-button
+        # 'yt-icon-button[aria-label]',  # aria-label이 있는 모든 yt-icon-button
+        # 'button[aria-label]',  # aria-label이 있는 모든 button
+        # 'yt-icon-button',  # 모든 yt-icon-button (마지막 fallback)
+        # 'button#button'  # 모든 button#button (최후의 fallback)
     ]
     SEARCH_INPUT = [
+        'input[aria-autocomplete="list"]',       # aria-autocomplete list인 input
         'input#input',
         'input[aria-label="검색"]',
         'input[aria-label="Search"]',  # 영어 aria-label
         'input[aria-label*="검색"]',  # 검색이 포함된 aria-label
         'input[aria-label*="Search"]',  # Search가 포함된 aria-label
-        'span#placeholder[aria-hidden="true"]',  # 새로운 검색 placeholder
-        'span.style-scope.ytmusic-search-box',   # 검색 박스 스타일 클래스
-        'ytmusic-search-box input',              # YouTube Music 검색 박스 내부 input
-        'ytmusic-search-box span',               # YouTube Music 검색 박스 내부 span
-        'input#input[autocomplete="off"]',       # autocomplete off인 input
-        'input[aria-autocomplete="list"]',       # aria-autocomplete list인 input
-        'input[aria-controls="suggestion-list"]', # suggestion-list 컨트롤하는 input
-        'input[role="combobox"]',                # combobox 역할의 input
-        'input.style-scope.ytmusic-search-box',  # ytmusic-search-box 스타일 클래스 input
-        'input[type="search"]',                  # search 타입 input
-        'input[placeholder*="검색"]',            # 검색이 포함된 placeholder
-        'input[placeholder*="Search"]',          # Search가 포함된 placeholder
-        'input[placeholder]',                    # placeholder가 있는 모든 input
+        # 'span#placeholder[aria-hidden="true"]',  # 새로운 검색 placeholder
+        # 'span.style-scope.ytmusic-search-box',   # 검색 박스 스타일 클래스
+        # 'ytmusic-search-box input',              # YouTube Music 검색 박스 내부 input
+        # 'ytmusic-search-box span',               # YouTube Music 검색 박스 내부 span
+        # 'input#input[autocomplete="off"]',       # autocomplete off인 input
+        # 'input[aria-controls="suggestion-list"]', # suggestion-list 컨트롤하는 input
+        # 'input[role="combobox"]',                # combobox 역할의 input
+        # 'input.style-scope.ytmusic-search-box',  # ytmusic-search-box 스타일 클래스 input
+        # 'input[type="search"]',                  # search 타입 input
+        # 'input[placeholder*="검색"]',            # 검색이 포함된 placeholder
+        # 'input[placeholder*="Search"]',          # Search가 포함된 placeholder
+        # 'input[placeholder]',                    # placeholder가 있는 모든 input
         'input'                                  # 모든 input (최후의 fallback)
     ]
     SONG_TAB = [
+        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string]',  # 어떤 텍스트든 상관없이
+        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="노래"]]',   # 한글
+        '//a[contains(@class, "yt-simple-endpoint") and contains(@class, "style-scope") and contains(@class, "ytmusic-chip-cloud-chip-renderer")]',  # 세 클래스 모두 포함된 a 태그(노래탭)
+        '//*[@id="header"]//a[1]',  # 헤더 내 첫 번째 a 태그(언어/텍스트 무관, 최우선)
+        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="Songs"]]',  # 영어
+        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="Song"]]',   # 영어 단수
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="Songs"]/ancestor::a',  # 영어
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a',  # 한글
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a',  # 모든 탭 
@@ -102,6 +108,13 @@ class YouTubeMusicSelectors:
     
     # 곡 정보 추출 관련
     SONG_ITEMS = [
+        'ytmusic-responsive-list-item-renderer.style-scope.ytmusic-shelf-renderer',  # 정확한 클래스 매칭
+        'ytmusic-responsive-list-item-renderer[is-cairo-voting-animation-enabled]',  # 속성 매칭
+        'ytmusic-responsive-list-item-renderer[height-style="MUSIC_RESPONSIVE_LIST_ITEM_HEIGHT_TALL"]',  # 높이 스타일 매칭
+        'ytmusic-responsive-list-item-renderer.style-scope.ytmusic-shelf-renderer[is-cairo-voting-animation-enabled][should-render-subtitle-separators]',  # 정확한 클래스와 속성 매칭
+        'ytmusic-responsive-list-item-renderer[is-cairo-voting-animation-enabled]',  # 핵심 속성만 매칭
+        'ytmusic-responsive-list-item-renderer.style-scope',  # 기본 클래스만 매칭
+        'ytmusic-responsive-list-item-renderer',
         'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer',  # 기존 셀렉터
         'ytmusic-responsive-list-item-renderer',  # 더 일반적인 셀렉터
         'ytmusic-shelf-renderer',  # shelf 단위
