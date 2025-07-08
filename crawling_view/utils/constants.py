@@ -77,6 +77,9 @@ class YouTubeSelectors:
     ]
     
     VIEW_COUNT_SELECTORS = [
+        'yt-formatted-string#info span:first-child',  # 최신 구조: info id의 첫 번째 span
+        'yt-formatted-string#info > span:first-child',  # info id의 직계 자식 첫 번째 span
+        'yt-formatted-string#info > span', 
         'span.view-count',
         'span#view-count',
         'div#count span.view-count',

@@ -120,11 +120,7 @@ class YouTubeCrawler:
         Returns:
             bool: 로딩 성공 여부
         """
-        selectors = [
-            "h1.style-scope.ytd-watch-metadata",
-            "h1.style-scope.ytd-watch-metadata > yt-formatted-string",
-            "yt-formatted-string.style-scope.ytd-watch-metadata"
-        ]
+        selectors = YouTubeSelectors.TITLE_SELECTORS[:3]  # 처음 3개만 사용
         
         for sel in selectors:
             try:
@@ -146,12 +142,7 @@ class YouTubeCrawler:
             str: 동영상 제목 또는 None
         """
         title_selectors = [
-            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata'},
-            {'type': 'css', 'value': 'h1.style-scope.ytd-watch-metadata > yt-formatted-string'},
-            {'type': 'css', 'value': 'yt-formatted-string.style-scope.ytd-watch-metadata'},
-            {'type': 'css', 'value': 'h1.title'},
-            {'type': 'css', 'value': 'h1.ytd-watch-metadata'},
-            {'type': 'css', 'value': 'h1#title'},
+            {'type': 'css', 'value': selector} for selector in YouTubeSelectors.TITLE_SELECTORS
         ]
         
         return self._find_with_selectors(soup, title_selectors)
@@ -167,12 +158,7 @@ class YouTubeCrawler:
             int: 조회수 또는 None
         """
         view_count_selectors = [
-            {'type': 'css', 'value': 'span.view-count'},
-            {'type': 'css', 'value': 'span#view-count'},
-            {'type': 'css', 'value': 'div#count span.view-count'},
-            {'type': 'css', 'value': 'div#info span.view-count'},
-            {'type': 'css', 'value': 'span.ytd-video-view-count-renderer'},
-            {'type': 'css', 'value': 'yt-view-count-renderer span.view-count'},
+            {'type': 'css', 'value': selector} for selector in YouTubeSelectors.VIEW_COUNT_SELECTORS
         ]
         
         view_count_text = self._find_with_selectors(soup, view_count_selectors)
@@ -189,11 +175,7 @@ class YouTubeCrawler:
             str: 업로드 날짜 또는 None
         """
         upload_date_selectors = [
-            {'type': 'css', 'value': 'div#info-strings yt-formatted-string'},
-            {'type': 'css', 'value': 'div#date yt-formatted-string'},
-            {'type': 'css', 'value': 'span.date'},
-            {'type': 'css', 'value': 'div#info-strings'},
-            {'type': 'css', 'value': 'yt-formatted-string#info-strings'},
+            {'type': 'css', 'value': selector} for selector in YouTubeSelectors.UPLOAD_DATE_SELECTORS
         ]
         
         date_text = self._find_with_selectors(soup, upload_date_selectors)

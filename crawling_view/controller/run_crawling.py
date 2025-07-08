@@ -157,15 +157,15 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
             analysis['platforms'][platform] = platform_data
         
         # 전체 요약
-        # 크롤링 실패 = 총 대상 곡 - 실제 크롤링 성공한 곡
-        total_crawling_failed = analysis['total_songs'] - total_crawled
+        # 크롤링 실패 = 총 대상 곡 - 실제 크롤링 성공한 곡 (단, 음수가 되지 않도록)
+        total_crawling_failed = max(0, analysis['total_songs'] - total_crawled)
         
         analysis['summary'] = {
             'total_crawled': total_crawled,
             'total_saved_db': total_saved_db,
             'total_saved_csv': total_saved_csv,
-            'total_failed': total_crawling_failed,  # 크롤링 실패만 (DB 실패는 크롤링 성공한 곡 중에서만)
-            'success_rate': (total_crawled / max(total_crawled + total_crawling_failed, 1)) * 100
+            'total_failed': total_crawling_failed,
+            'success_rate': (total_crawled / max(analysis['total_songs'], 1)) * 100  # 전체 곡 수 대비 성공률
         }
     
     return analysis

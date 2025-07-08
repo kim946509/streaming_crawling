@@ -65,11 +65,7 @@ class GenieCrawler:
             for attempt in range(max_attempts):
                 try:
                     # 검색 입력창 찾기
-                    search_input_selectors = [
-                        'input#sc-fd',
-                        'input#input', 
-                        'input[aria-label="검색"]',
-                    ]
+                    search_input_selectors = GenieSelectors.SEARCH_INPUT
                     search_input = None
                     for selector in search_input_selectors:
                         try:
