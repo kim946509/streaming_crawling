@@ -157,15 +157,17 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
             analysis['platforms'][platform] = platform_data
         
         # 전체 요약
-        # 크롤링 실패 = 총 대상 곡 - 실제 크롤링 성공한 곡 (단, 음수가 되지 않도록)
-        total_crawling_failed = max(0, analysis['total_songs'] - total_crawled)
+        # 성공률은 실제 대상 곡 수 기준으로 계산 (플랫폼 수로 나누기)
+        platform_count = len([p for p in ['genie', 'youtube_music', 'youtube', 'melon'] if p in crawling_results])
+        actual_success_songs = total_crawled // max(platform_count, 1) if platform_count > 0 else 0
+        total_crawling_failed = max(0, analysis['total_songs'] - actual_success_songs)
         
         analysis['summary'] = {
             'total_crawled': total_crawled,
             'total_saved_db': total_saved_db,
             'total_saved_csv': total_saved_csv,
             'total_failed': total_crawling_failed,
-            'success_rate': (total_crawled / max(analysis['total_songs'], 1)) * 100  # 전체 곡 수 대비 성공률
+            'success_rate': (actual_success_songs / max(analysis['total_songs'], 1)) * 100  # 실제 곡 수 기준 성공률
         }
     
     return analysis
@@ -212,8 +214,8 @@ def log_detailed_results(analysis):
         logger.info(f"📈 성공률: {summary['success_rate']:.1f}%")
         
         # 성능 분석
-        if summary['unique_crawled'] > 0:
-            avg_time_per_song = analysis['elapsed_time'] / summary['unique_crawled']
+        if summary['total_crawled'] > 0:
+            avg_time_per_song = analysis['elapsed_time'] / summary['total_crawled']
             logger.info(f"⚡ 곡당 평균 처리 시간: {avg_time_per_song:.2f}초")
     
     elif analysis['status'] == 'no_songs':
