@@ -87,8 +87,9 @@ class YouTubeMusicSelectors:
         'input'                                  # 모든 input (최후의 fallback)
     ]
     SONG_TAB = [
-        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a',  # 한글
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="Songs"]/ancestor::a',  # 영어
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a',  # 한글
+        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a',  # 모든 탭 
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[contains(text(), "노래")]/ancestor::a',  # 한글 포함
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[contains(text(), "Songs")]/ancestor::a',  # 영어 포함
         '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a[contains(@aria-label, "노래")]',  # aria-label으로 한글
@@ -97,11 +98,19 @@ class YouTubeMusicSelectors:
         '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and text()="Songs"]/ancestor::a',  # 실제 HTML 구조 영어
         '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and contains(text(), "노래")]/ancestor::a',  # 실제 HTML 구조 한글 포함
         '//yt-formatted-string[@class="text style-scope ytmusic-chip-cloud-chip-renderer" and contains(text(), "Songs")]/ancestor::a',  # 실제 HTML 구조 영어 포함
-        '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//a',  # 모든 탭 (fallback)
     ]
     
     # 곡 정보 추출 관련
-    SONG_ITEMS = 'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer'
+    SONG_ITEMS = [
+        'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer',  # 기존 셀렉터
+        'ytmusic-responsive-list-item-renderer',  # 더 일반적인 셀렉터
+        'ytmusic-shelf-renderer',  # shelf 단위
+        'ytmusic-card-shelf-renderer ytmusic-responsive-list-item-renderer',  # card shelf
+        'ytmusic-playlist-shelf-renderer ytmusic-responsive-list-item-renderer',  # playlist shelf
+        'ytmusic-responsive-list-item-renderer[is-music-video]',  # 뮤직 비디오
+        'ytmusic-responsive-list-item-renderer[is-song]',  # 곡
+        'ytmusic-responsive-list-item-renderer[is-album]',  # 앨범
+    ]
     SONG_TITLE = 'yt-formatted-string.title a'
     ARTIST_COLUMN = '.secondary-flex-columns'
     ARTIST_LINK = 'a'

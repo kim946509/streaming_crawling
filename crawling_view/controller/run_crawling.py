@@ -158,17 +158,24 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
             analysis['platforms'][platform] = platform_data
         
         # 전체 요약
-        # 성공률은 실제 대상 곡 수 기준으로 계산 (플랫폼 수로 나누기)
-        platform_count = len([p for p in Platforms.ALL_PLATFORMS if p in crawling_results])
-        actual_success_songs = total_crawled // max(platform_count, 1) if platform_count > 0 else 0
-        total_crawling_failed = max(0, analysis['total_songs'] - actual_success_songs)
+        # 총 크롤링 시도: 곡 수 × 플랫폼 수
+        total_attempts = analysis['total_songs'] * len(Platforms.ALL_PLATFORMS)
+        
+        # 실제 성공: CSV 저장이 성공한 것이 실제 성공
+        actual_success = total_saved_csv
+        
+        # 실패: 총 시도 - 실제 성공
+        total_failed = total_attempts - actual_success
+        
+        # 성공률: 실제 성공 / 총 시도
+        success_rate = (actual_success / max(total_attempts, 1)) * 100
         
         analysis['summary'] = {
             'total_crawled': total_crawled,
             'total_saved_db': total_saved_db,
             'total_saved_csv': total_saved_csv,
-            'total_failed': total_crawling_failed,
-            'success_rate': (actual_success_songs / max(analysis['total_songs'], 1)) * 100  # 실제 곡 수 기준 성공률
+            'total_failed': total_failed,
+            'success_rate': success_rate
         }
     
     return analysis
@@ -206,9 +213,13 @@ def log_detailed_results(analysis):
         
         # 전체 요약
         summary = analysis['summary']
+        total_attempts = analysis['total_songs'] * len(Platforms.ALL_PLATFORMS)
+        
         logger.info("\n📊 전체 요약:")
         logger.info("-" * 60)
-        logger.info(f"🎯 총 크롤링: {summary['total_crawled']}개")
+        logger.info(f"🎵 대상 곡: {analysis['total_songs']}개")
+        logger.info(f"🌐 플랫폼: {len(Platforms.ALL_PLATFORMS)}개")
+        logger.info(f"🎯 총 크롤링 시도: {total_attempts}개")
         logger.info(f"💾 DB 저장: {summary['total_saved_db']}개")
         logger.info(f"📄 CSV 저장: {summary['total_saved_csv']}개 파일")
         logger.info(f"❌ 실패: {summary['total_failed']}개")

@@ -14,6 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from crawling_view.utils.constants import YouTubeMusicSelectors, CommonSettings
 from crawling_view.utils.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
+from crawling_view.utils.matching import compare_song_info
 
 # .env 파일 로드
 load_dotenv()
@@ -48,18 +49,21 @@ class YouTubeMusicCrawler:
             current_time = time.time()
             
             for cookie in cookies:
-                # expires 필드가 있는 경우 확인
+                # expires 필드가 있는 경우 확인 (절대 시간)
                 if 'expiry' in cookie:
                     if cookie['expiry'] < current_time:
-                        logger.info(f"🍪 쿠키 만료됨: {cookie.get('name', 'unknown')}")
+                        logger.info(f"🍪 쿠키 만료됨 (expiry): {cookie.get('name', 'unknown')}")
                         return True
                 
-                # maxAge 필드가 있는 경우 확인
+                # maxAge 필드가 있는 경우 확인 (상대 시간 - 쿠키 생성 시점부터의 유효 시간)
+                # maxAge는 쿠키 생성 시점부터의 유효 시간이므로, 
+                # 실제로는 쿠키 생성 시간을 알아야 정확히 계산할 수 있음
+                # 하지만 일반적으로 maxAge가 있는 쿠키는 session cookie이므로 
+                # 브라우저 세션이 유지되는 한 유효함
                 if 'maxAge' in cookie and cookie['maxAge'] > 0:
-                    # maxAge는 초 단위이므로 현재 시간과 비교
-                    if cookie['maxAge'] < current_time:
-                        logger.info(f"🍪 쿠키 만료됨: {cookie.get('name', 'unknown')}")
-                        return True
+                    # maxAge가 있는 쿠키는 세션 쿠키로 간주하고 만료되지 않았다고 판단
+                    logger.debug(f"🍪 세션 쿠키 발견: {cookie.get('name', 'unknown')} (maxAge: {cookie['maxAge']})")
+                    continue
             
             return False
         except Exception as e:
@@ -280,37 +284,29 @@ class YouTubeMusicCrawler:
             clean_artist = artist_name.strip().replace('\n', ' ').replace('\r', ' ')
             clean_song = song_title.strip().replace('\n', ' ').replace('\r', ' ')
             query = f"{clean_artist} {clean_song}"
-            logger.info(f"🔍 YouTube Music 검색어: '{query}'")
+            logger.info(f"🔍 YouTube Music 검색어: {query}")
             max_attempts = 3
             
             for attempt in range(max_attempts):
                 try:
                     logger.info(f"🔍 검색 시도 {attempt+1}/{max_attempts}")
                     
-                    # 페이지 로딩 대기
-                    self._wait_for_page_load()
+                    # 검색어 입력창 찾기
+                    search_input = self._find_search_input()
+                    if not search_input:
+                        raise Exception("검색 입력창을 찾을 수 없습니다.")
                     
-                    # 검색 버튼 찾기 및 클릭
-                    search_button = self._find_search_button()
-                    if not search_button:
-                        raise Exception("검색 버튼을 찾을 수 없습니다.")
-                    
-                    # 검색 버튼이 화면에 보이는지 확인
-                    if not search_button.is_displayed():
-                        raise Exception("검색 버튼이 화면에 보이지 않습니다.")
-                    
-                    # JavaScript로 클릭 시도 (더 안정적)
+                    # 검색 입력창 클릭하여 포커스
                     try:
-                        self.driver.execute_script("arguments[0].click();", search_button)
-                        logger.info("✅  검색 버튼 클릭 성공")
+                        self.driver.execute_script("arguments[0].click();", search_input)
+                        logger.info("✅ 검색 입력창 포커스 성공")
                     except Exception as e:
-                        logger.warning(f"⚠️ 클릭 실패, 일반 클릭 시도: {e}")
-                        search_button.click()
+                        logger.warning(f"⚠️ 검색 입력창 포커스 실패: {e}")
+                        search_input.click()
                     
-                    time.sleep(1)  
+                    time.sleep(1)
                     
                     # 검색어 입력
-                    search_input = self._find_search_input()
                     if not search_input:
                         raise Exception("검색 입력창을 찾을 수 없습니다.")
                     
@@ -325,7 +321,7 @@ class YouTubeMusicCrawler:
                         # 입력창이 비어있는지 확인
                         current_value = search_input.get_attribute('value') or ''
                         if current_value:
-                            logger.info(f"🔍 기존 검색어 제거: '{current_value}'")
+                            logger.info(f"🔍 기존 검색어 제거: {current_value}")
                             search_input.clear()
                             time.sleep(1)
                     except Exception as e:
@@ -340,28 +336,23 @@ class YouTubeMusicCrawler:
                         logger.warning(f"⚠️ JavaScript 입력 실패, 일반 입력 시도: {e}")
                         search_input.send_keys(query)
                     
-                    time.sleep(2)
+                    time.sleep(1)  # 검색어 입력 후 대기 시간 단축
                     
-                    # Enter 키 입력 (더 안전한 방법)
-                    try:
-                        # JavaScript로 Enter 이벤트 발생
-                        self.driver.execute_script("""
-                            var event = new KeyboardEvent('keydown', {
-                                key: 'Enter',
-                                code: 'Enter',
-                                keyCode: 13,
-                                which: 13,
-                                bubbles: true,
-                                cancelable: true
-                            });
-                            arguments[0].dispatchEvent(event);
-                        """, search_input)
-                        logger.info("✅ JavaScript로 Enter 키 이벤트 발생 성공")
-                    except Exception as e:
-                        logger.warning(f"⚠️ JavaScript Enter 이벤트 실패, 일반 Enter 시도: {e}")
-                        search_input.send_keys(Keys.RETURN)
+                    # 검색어가 제대로 입력되었는지 확인
+                    current_value = search_input.get_attribute('value') or ''
+                    if current_value != query:
+                        logger.warning(f"⚠️ 검색어가 제대로 입력되지 않음: '{current_value}' != '{query}'")
+                        # 다시 입력 시도
+                        search_input.clear()
+                        time.sleep(0.5)
+                        search_input.send_keys(query)
+                        time.sleep(1)
                     
-                    time.sleep(1)  # 원래 대기 시간으로 복원
+                    # Enter 키로 검색 실행 (더 안정적)
+                    search_input.send_keys(Keys.RETURN)
+                    logger.info("✅ Enter 키로 검색 실행")
+                    
+                    time.sleep(0.5)  # 검색 실행 후 대기 시간 단축
                     
                     # "노래" 탭 클릭 (다국어 지원)
                     song_tab_clicked = False
@@ -493,8 +484,18 @@ class YouTubeMusicCrawler:
             if not soup:
                 return None
             
-            song_items = soup.select(YouTubeMusicSelectors.SONG_ITEMS)
-            logger.info(f"🔍 YouTube Music 검색 결과: {len(song_items)}개 곡 발견")
+            # 여러 셀렉터를 시도하여 검색 결과 찾기
+            song_items = []
+            for selector in YouTubeMusicSelectors.SONG_ITEMS:
+                items = soup.select(selector)
+                if items:
+                    song_items = items
+                    logger.info(f"🔍 YouTube Music 검색 결과: {len(song_items)}개 곡 발견 (셀렉터: {selector})")
+                    break
+            
+            if not song_items:
+                logger.warning("⚠️ 모든 셀렉터에서 검색 결과를 찾지 못했습니다")
+                logger.info(f"🔍 YouTube Music 검색 결과: 0개 곡 발견")
             
             for i, item in enumerate(song_items):
                 logger.info(f"🔍 검사 중인 곡 {i+1}/{len(song_items)}")
@@ -514,22 +515,15 @@ class YouTubeMusicCrawler:
                     # 조회수 추출
                     view_count = self._extract_view_count(item)
 
-                    # 디버그 로깅
-                    normalized_song = normalize_text(song_title)
-                    normalized_target = normalize_text(target_song)
-                    normalized_artist = normalize_text(artist_name)
-                    normalized_target_artist = normalize_text(target_artist)
+                    # matching.py의 compare_song_info 함수 사용
+                    match_result = compare_song_info(
+                        song_title, artist_name, 
+                        target_song, target_artist
+                    )
                     
-                    logger.debug(f"검사 중: 제목='{song_title}' → '{normalized_song}' vs '{target_song}' → '{normalized_target}'")
-                    logger.debug(f"검사 중: 아티스트='{artist_name}' → '{normalized_artist}' vs '{target_artist}' → '{normalized_target_artist}'")
-
-                    # 정규화된 문자열로 비교
-                    title_match = normalized_song == normalized_target
-                    artist_match = normalized_artist == normalized_target_artist
+                    logger.debug(f"매칭 결과: {match_result}")
                     
-                    logger.debug(f"일치 검사: 제목 일치={title_match}, 아티스트 일치={artist_match}")
-                    
-                    if title_match and artist_match:
+                    if match_result['both_match']:
                         result = {
                             'song_title': song_title,
                             'artist_name': artist_name,
@@ -541,10 +535,7 @@ class YouTubeMusicCrawler:
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
                     else:
-                        if not title_match:
-                            logger.debug(f"제목 불일치: '{normalized_song}' != '{normalized_target}'")
-                        if not artist_match:
-                            logger.debug(f"아티스트 불일치: '{normalized_artist}' != '{normalized_target_artist}'")
+                        logger.debug(f"매칭 실패: 제목={match_result['title_match']}, 아티스트={match_result['artist_match']}, 타입={match_result['match_type']}")
 
                 except Exception as e:
                     logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")
@@ -644,13 +635,4 @@ class YouTubeMusicCrawler:
         except Exception as e:
             logger.error(f"❌ 페이지 상태 로깅 실패: {e}")
     
-    def _wait_for_page_load(self, timeout=10):
-        """페이지 로딩 완료 대기"""
-        try:
-            # DOM이 준비될 때까지 대기
-            self.wait.until(lambda driver: driver.execute_script("return document.readyState") == "complete")
-            logger.debug("✅ 페이지 로딩 완료")
-            return True
-        except Exception as e:
-            logger.warning(f"⚠️ 페이지 로딩 대기 실패: {e}")
-            return False
+

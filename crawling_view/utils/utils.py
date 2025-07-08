@@ -15,7 +15,8 @@ def normalize_text(text):
     텍스트 정규화 함수
     - 유니코드 정규화
     - 아포스트로피 통일
-    - 공백 정규화 및 소문자 변환
+    - 특수문자 제거 및 공백 정규화
+    - 소문자 변환
     
     Args:
         text (str): 정규화할 텍스트
@@ -32,8 +33,13 @@ def normalize_text(text):
     # 모든 아포스트로피를 ' 로 통일
     text = text.replace('\u2018', "'").replace('\u2019', "'").replace('\u0060', "'").replace('\u00B4', "'")
     
+    # 특수문자 제거 (하이픈, 괄호 등)
+    text = re.sub(r'[\(\)\[\]\{\}\-\–\—]', ' ', text)
+    
     # 공백 정규화 및 소문자 변환
-    return ' '.join(text.lower().split())
+    normalized = ' '.join(text.lower().split())
+    
+    return normalized
 
 def clean_filename(filename):
     """
