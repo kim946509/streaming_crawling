@@ -212,8 +212,8 @@ def log_detailed_results(analysis):
         logger.info(f"📈 성공률: {summary['success_rate']:.1f}%")
         
         # 성능 분석
-        if summary['total_crawled'] > 0:
-            avg_time_per_song = analysis['elapsed_time'] / summary['total_crawled']
+        if summary['unique_crawled'] > 0:
+            avg_time_per_song = analysis['elapsed_time'] / summary['unique_crawled']
             logger.info(f"⚡ 곡당 평균 처리 시간: {avg_time_per_song:.2f}초")
     
     elif analysis['status'] == 'no_songs':

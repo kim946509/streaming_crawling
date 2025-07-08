@@ -1,18 +1,28 @@
 """
 Melon 크롤링 및 파싱 로직 (API 기반)
 """
+import os
 import time
 import random
 import logging
 import requests
 import json
+from dotenv import load_dotenv
 from crawling_view.utils.utils import get_current_timestamp
+
+# .env 파일 로드
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 class MelonCrawler:
     def __init__(self):
-        self.api_base_url = "https://m2.melon.com/m6/v5/song/info.json"
+        # .env에서 API URL 로드
+        self.api_base_url = os.getenv('MELON_API_URL', '')
+        if not self.api_base_url:
+            logger.error("❌ MELON_API_URL 환경변수가 설정되지 않았습니다.")
+            raise ValueError("MELON_API_URL 환경변수가 필요합니다.")
+        
         self.session = requests.Session()
         # User-Agent 설정
         self.session.headers.update({

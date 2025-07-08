@@ -50,11 +50,24 @@ class YouTubeMusicSelectors:
     # 검색 관련
     SEARCH_BUTTON = [
         'button#button[aria-label="검색 시작"]',
-        'button[aria-label="검색"]'
+        'button[aria-label="검색"]',
+        'yt-icon-button.search-button',  # 검색 버튼 클래스
+        'button#button.style-scope.yt-icon-button[aria-label="검색 시작"]',  # 전체 클래스 포함
+        'yt-icon-button[title="검색 시작"]',  # 타이틀로 검색
+        'button.style-scope.yt-icon-button'  # 일반적인 yt-icon-button
     ]
     SEARCH_INPUT = [
         'input#input',
-        'input[aria-label="검색"]'
+        'input[aria-label="검색"]',
+        'span#placeholder[aria-hidden="true"]',  # 새로운 검색 placeholder
+        'span.style-scope.ytmusic-search-box',   # 검색 박스 스타일 클래스
+        'ytmusic-search-box input',              # YouTube Music 검색 박스 내부 input
+        'ytmusic-search-box span',               # YouTube Music 검색 박스 내부 span
+        'input#input[autocomplete="off"]',       # autocomplete off인 input
+        'input[aria-autocomplete="list"]',       # aria-autocomplete list인 input
+        'input[aria-controls="suggestion-list"]', # suggestion-list 컨트롤하는 input
+        'input[role="combobox"]',                # combobox 역할의 input
+        'input.style-scope.ytmusic-search-box'   # ytmusic-search-box 스타일 클래스 input
     ]
     SONG_TAB = '//iron-selector[@id="chips"]//ytmusic-chip-cloud-chip-renderer//yt-formatted-string[text()="노래"]/ancestor::a'
     
