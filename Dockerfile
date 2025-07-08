@@ -51,9 +51,11 @@ COPY logging_setting.py .
 RUN mkdir -p logs csv_folder
 
 # cron 작업 설정 (하루 8번: 00시, 03시, 06시, 09시, 12시, 15시, 18시, 21시)
-# 환경변수는 docker-compose에서 _file로 로드되므로 cron에서도 사용 가능
-RUN echo "0 0,3,6,9,12,15,18,21 * * * cd /app && export DJANGO_SETTINGS_MODULE=config.settings && python3 crawling_view/controller/run_crawling.py >> /app/logs/cron.log 2>&1" > /etc/cron.d/crawling-cron \
-    && chmod 0644 /etc/cron.d/crawling-cron \env
+# cron에서 환경변수를 사용하기 위해 환경변수를 cron 환경에 추가
+RUN echo "SHELL=/bin/bash" > /etc/cron.d/crawling-cron \
+    && echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> /etc/cron.d/crawling-cron \
+    && echo "0 0,3,6,9,12,15,18,21 * * * cd /app && export DJANGO_SETTINGS_MODULE=config.settings && python3 crawling_view/controller/run_crawling.py >> /app/logs/cron.log 2>&1" >> /etc/cron.d/crawling-cron \
+    && chmod 0644 /etc/cron.d/crawling-cron \
     && crontab /etc/cron.d/crawling-cron
 
 # 실행 스크립트 생성
@@ -63,6 +65,9 @@ service cron start\n\
 \n\
 # Django 설정\n\
 export DJANGO_SETTINGS_MODULE=config.settings\n\
+\n\
+# 환경변수를 cron에 전달하기 위해 cron 환경 파일 업데이트\n\
+env | grep -v "^_" | grep -v "^\\." | sed "s/^/export /" > /etc/environment\n\
 \n\
 # 첫 번째 크롤링 실행 (테스트용)\n\
 echo "Starting initial crawling test..."\n\
