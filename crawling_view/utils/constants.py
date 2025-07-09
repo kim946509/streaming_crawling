@@ -87,6 +87,9 @@ class YouTubeMusicSelectors:
         'input'                                  # 모든 input (최후의 fallback)
     ]
     SONG_TAB = [
+        # 더 일반적인 셀렉터 추가
+        '//a[contains(@class, "ytmusic-chip-cloud-chip-renderer") and @role="tab"]',  # role 속성 활용
+        '//a[contains(@title, "노래") or contains(@title, "Songs")]',  # title 속성 활용
         '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string]',  # 어떤 텍스트든 상관없이
         '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="노래"]]',   # 한글
         '//a[contains(@class, "yt-simple-endpoint") and contains(@class, "style-scope") and contains(@class, "ytmusic-chip-cloud-chip-renderer")]',  # 세 클래스 모두 포함된 a 태그(노래탭)
@@ -108,21 +111,41 @@ class YouTubeMusicSelectors:
     
     # 곡 정보 추출 관련
     SONG_ITEMS = [
-        'ytmusic-responsive-list-item-renderer.style-scope.ytmusic-shelf-renderer',  # 정확한 클래스 매칭
-        'ytmusic-responsive-list-item-renderer[is-cairo-voting-animation-enabled]',  # 속성 매칭
-        'ytmusic-responsive-list-item-renderer[height-style="MUSIC_RESPONSIVE_LIST_ITEM_HEIGHT_TALL"]',  # 높이 스타일 매칭
-        'ytmusic-responsive-list-item-renderer.style-scope.ytmusic-shelf-renderer[is-cairo-voting-animation-enabled][should-render-subtitle-separators]',  # 정확한 클래스와 속성 매칭
-        'ytmusic-responsive-list-item-renderer[is-cairo-voting-animation-enabled]',  # 핵심 속성만 매칭
-        'ytmusic-responsive-list-item-renderer.style-scope',  # 기본 클래스만 매칭
+        # 1. 가장 기본적인 구조 매칭
+        'ytmusic-responsive-list-item-renderer[class*="style-scope"]',  # class에 style-scope가 포함된 모든 요소
+        
+        # 2. 필수 속성 조합으로 매칭
+        'ytmusic-responsive-list-item-renderer[class*="style-scope"][has-thumbnail-overlay]',
+        
+        # 3. 내부 구조를 통한 매칭
+        'ytmusic-responsive-list-item-renderer:has(.title-column)',  # title-column을 포함하는 요소
+        'ytmusic-responsive-list-item-renderer:has(.secondary-flex-columns)',  # secondary-flex-columns을 포함하는 요소
+        
+        # 4. 복합 조건 매칭
+        'ytmusic-responsive-list-item-renderer[class*="style-scope"]:has(.title-column):has(.secondary-flex-columns)',
+        
+        # 5. 특정 자식 요소를 통한 매칭
+        'ytmusic-responsive-list-item-renderer:has(yt-formatted-string.title)',
+        'ytmusic-responsive-list-item-renderer:has(ytmusic-thumbnail-renderer)',
+        
+        # 6. 동적 속성을 통한 매칭
+        'ytmusic-responsive-list-item-renderer[stack-flex-columns]',
+        'ytmusic-responsive-list-item-renderer[height-style="MUSIC_RESPONSIVE_LIST_ITEM_HEIGHT_TALL"]',
+        
+        # 7. 기존 셀렉터들 (fallback)
+        'ytmusic-responsive-list-item-renderer.style-scope.ytmusic-shelf-renderer',
+        'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer',
         'ytmusic-responsive-list-item-renderer',
-        'ytmusic-shelf-renderer ytmusic-responsive-list-item-renderer',  # 기존 셀렉터
-        'ytmusic-responsive-list-item-renderer',  # 더 일반적인 셀렉터
-        'ytmusic-shelf-renderer',  # shelf 단위
-        'ytmusic-card-shelf-renderer ytmusic-responsive-list-item-renderer',  # card shelf
-        'ytmusic-playlist-shelf-renderer ytmusic-responsive-list-item-renderer',  # playlist shelf
-        'ytmusic-responsive-list-item-renderer[is-music-video]',  # 뮤직 비디오
-        'ytmusic-responsive-list-item-renderer[is-song]',  # 곡
-        'ytmusic-responsive-list-item-renderer[is-album]',  # 앨범
+        
+        # 8. 부모 컨텍스트를 통한 매칭
+        'ytmusic-shelf-renderer > ytmusic-responsive-list-item-renderer',
+        'div.content-wrapper ytmusic-responsive-list-item-renderer',
+        
+        # 9. 재생 버튼 존재 여부를 통한 매칭
+        'ytmusic-responsive-list-item-renderer:has(ytmusic-play-button-renderer)',
+        
+        # 10. 메뉴 버튼 존재 여부를 통한 매칭
+        'ytmusic-responsive-list-item-renderer:has(ytmusic-menu-renderer)'
     ]
     SONG_TITLE = 'yt-formatted-string.title a'
     ARTIST_COLUMN = '.secondary-flex-columns'
