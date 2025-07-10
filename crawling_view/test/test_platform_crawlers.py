@@ -24,7 +24,7 @@ def test_single_platform(platform):
     print(f"전체 활성 곡 수: {len(active_songs)}")
     
     for song in active_songs:
-        print(f"  - {song.id}: {song.genie_artist} - {song.genie_title}")
+        print(f"  - {song.id}: {song.artist_ko} - {song.title_ko}")
         print(f"    Genie 가능: {song.is_platform_available('genie')}")
         print(f"    YouTube Music 가능: {song.is_platform_available('youtube_music')}")
         print(f"    YouTube 가능: {song.is_platform_available('youtube')}")

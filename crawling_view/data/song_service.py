@@ -17,36 +17,36 @@ class SongService:
     @staticmethod
     def get_active_songs(target_date=None):
         """
-        특정 날짜를 기준으로 활성화된 크롤링 대상 곡들을 조회
+        특정 날짜를 기준으로 활성화된 크롤링 대상 곡들을 조회 (중복 제거)
         
         Args:
             target_date (date, optional): 기준 날짜. None이면 오늘 날짜 사용
             
         Returns:
-            list: SongInfo 객체 리스트
+            list: SongInfo 객체 리스트 (중복 제거됨)
         """
         if target_date is None:
             target_date = date.today()
         
-        # 1. 해당 날짜가 크롤링 기간에 포함되고 활성화된 song_id 조회
-        active_periods = CrawlingPeriod.objects.filter(
+        # 1. 해당 날짜가 크롤링 기간에 포함되고 활성화된 song_id 조회 (distinct로 중복 제거)
+        unique_song_ids = CrawlingPeriod.objects.filter(
             start_date__lte=target_date,
             end_date__gte=target_date,
             is_active=True
-        ).values_list('song_id', flat=True)
+        ).values_list('song_id', flat=True).distinct()
         
         logger.info(f"📅 기준 날짜: {target_date}")
-        logger.info(f"🔍 활성 크롤링 기간에 포함된 song_id 개수: {len(active_periods)}")
+        logger.info(f"🔍 중복 제거된 활성 song_id 개수: {len(unique_song_ids)}")
         
         # 2. 해당 song_id들의 SongInfo 조회
         active_songs = SongInfo.objects.filter(
-            id__in=active_periods
+            id__in=unique_song_ids
         )
         
         logger.info(f"🎵 크롤링 대상 곡 개수: {len(active_songs)}")
         
         for song in active_songs:
-            logger.debug(f"   - {song.id}: {song.genie_artist} - {song.genie_title}")
+            logger.debug(f"   - {song.id}: {song.artist_ko} - {song.title_ko}")
         
         return list(active_songs)
     
@@ -95,8 +95,8 @@ class SongService:
             return [
                 {
                     'song_id': song.id,
-                    'song_title': song.get_platform_info(platform)['title'],
-                    'artist_name': song.get_platform_info(platform)['artist']
+                    'song_title': song.get_platform_info(platform)['title_ko'],
+                    'artist_name': song.get_platform_info(platform)['artist_ko']
                 }
                 for song in songs
                 if song.is_platform_available(platform)
@@ -105,15 +105,15 @@ class SongService:
             return [
                 {
                     'song_id': song.id,
-                    'song_title': song.get_platform_info(platform)['title'],
-                    'artist_name': song.get_platform_info(platform)['artist']
+                    'song_title': song.get_platform_info(platform)['title_ko'],
+                    'artist_name': song.get_platform_info(platform)['artist_ko']
                 }
                 for song in songs
                 if song.is_platform_available(platform)
             ]
         elif platform == Platforms.YOUTUBE:
             return [
-                (song.get_platform_info(platform)['url'], song.get_platform_info(platform)['artist'], song.id)
+                (song.get_platform_info(platform)['url'], song.get_platform_info(platform)['artist_ko'], song.id)
                 for song in songs
                 if song.is_platform_available(platform)
             ]

@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 logger.error(f"❌ 곡을 찾을 수 없습니다. Song ID: {song_id}")
                 raise CommandError(f"Song ID {song_id}에 해당하는 곡이 존재하지 않습니다.")
             
-            logger.info(f"📋 곡 정보: {song.genie_artist} - {song.genie_title}")
+            logger.info(f"📋 곡 정보: {song.artist_ko} - {song.title_ko}")
             
             # 2. 플랫폼별 크롤링 가능 여부 확인
             platforms = Platforms.ALL_PLATFORMS
@@ -89,7 +89,7 @@ class Command(BaseCommand):
             
             logger.info("=" * 50)
             logger.info("📊 단일 곡 크롤링 완료")
-            logger.info(f"🎵 대상 곡: {song.genie_artist} - {song.genie_title}")
+            logger.info(f"🎵 대상 곡: {song.artist_ko} - {song.title_ko}")
             logger.info(f"✅ 성공: {success_count}/{total_count} 플랫폼")
             logger.info(f"📈 성공률: {(success_count/total_count*100):.1f}%")
             

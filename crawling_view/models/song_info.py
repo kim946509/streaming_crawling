@@ -9,11 +9,11 @@ class SongInfo(BaseModel):
     """
     노래 기본 정보 모델
     """
-    # 플랫폼별 정보 (필수 정보만)
-    genie_title = models.CharField(max_length=255, blank=True, null=True, help_text="지니 곡 제목")
-    genie_artist = models.CharField(max_length=255, blank=True, null=True, help_text="지니 아티스트명")
-    youtube_music_title = models.CharField(max_length=255, blank=True, null=True, help_text="유튜브 뮤직 곡 제목")
-    youtube_music_artist = models.CharField(max_length=255, blank=True, null=True, help_text="유튜브 뮤직 아티스트명")
+    # 기본 정보
+    artist_ko = models.CharField(max_length=255, default="unknown", help_text="아티스트명 (국문)")
+    artist_en = models.CharField(max_length=255, default="unknown", help_text="아티스트명 (영문)")
+    title_ko = models.CharField(max_length=255, default="unknown", help_text="곡 제목 (국문)")
+    title_en = models.CharField(max_length=255,  default="unknown",help_text="곡 제목 (영문)")
     
     # 크롤링용 필수 정보
     youtube_url = models.URLField(max_length=500, blank=True, null=True, help_text="YouTube URL (YouTube 크롤링용)")
@@ -23,7 +23,7 @@ class SongInfo(BaseModel):
         db_table = 'song_info'
         
     def __str__(self):
-        return f"[{self.id}] {self.genie_artist} - {self.genie_title}"
+        return f"[{self.id}] {self.artist_ko} - {self.title_ko}"
     
     def get_platform_info(self, platform):
         """
@@ -35,33 +35,25 @@ class SongInfo(BaseModel):
         Returns:
             dict: 플랫폼별 정보
         """
+        base_info = {
+            'title_ko': self.title_ko,
+            'title_en': self.title_en,
+            'artist_ko': self.artist_ko,
+            'artist_en': self.artist_en
+        }
+        
         if platform == Platforms.MELON:
             return {
-                'song_id': self.melon_song_id,
-                'title': self.youtube_music_title,  # YouTube Music 정보로 대체
-                'artist': self.youtube_music_artist  # YouTube Music 정보로 대체
-            }
-        elif platform == Platforms.GENIE:
-            return {
-                'title': self.genie_title,
-                'artist': self.genie_artist
+                **base_info,
+                'song_id': self.melon_song_id
             }
         elif platform == Platforms.YOUTUBE:
             return {
-                'url': self.youtube_url,
-                'title': self.youtube_music_title,  # YouTube Music 정보로 대체
-                'artist': self.youtube_music_artist  # YouTube Music 정보로 대체
-            }
-        elif platform == Platforms.YOUTUBE_MUSIC:
-            return {
-                'title': self.youtube_music_title,
-                'artist': self.youtube_music_artist
+                **base_info,
+                'url': self.youtube_url
             }
         else:
-            return {
-                'title': self.genie_title,
-                'artist': self.genie_artist
-            }
+            return base_info
     
     def is_platform_available(self, platform):
         """
@@ -73,13 +65,12 @@ class SongInfo(BaseModel):
         Returns:
             bool: 크롤링 가능 여부
         """
+        # 기본적으로 국문 정보는 필수
+        has_basic_info = bool(self.title_ko and self.artist_ko)
+        
         if platform == Platforms.MELON:
-            return bool(self.melon_song_id)
-        elif platform == Platforms.GENIE:
-            return bool(self.genie_title and self.genie_artist)
+            return has_basic_info and bool(self.melon_song_id)
         elif platform == Platforms.YOUTUBE:
-            return bool(self.youtube_url)
-        elif platform == Platforms.YOUTUBE_MUSIC:
-            return bool(self.youtube_music_title and self.youtube_music_artist)
+            return has_basic_info and bool(self.youtube_url)
         else:
-            return False 
+            return has_basic_info 

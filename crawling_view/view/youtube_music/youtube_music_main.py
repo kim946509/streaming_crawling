@@ -43,8 +43,16 @@ def run_youtube_music_crawling(song_list, save_csv=True, save_db=True):
                 
                 logger.info(f"🔍 검색 중: {song_title} - {artist_name} (ID: {song_id})")
                 
-                # 크롤링 실행 (song_id 전달)
-                result = crawler.crawl_song(song_title, artist_name, song_id)
+                # 새로운 구조로 곡 정보 전달
+                song_data = {
+                    'title_ko': song_title,
+                    'title_en': song_info.get('title_en', ''),  # 영문 제목이 있으면 사용
+                    'artist_ko': artist_name, 
+                    'artist_en': song_info.get('artist_en', '')  # 영문 아티스트가 있으면 사용
+                }
+                
+                # 크롤링 실행
+                result = crawler.crawl_song(song_data)
                 
                 if result:
                     crawled_data.append(result)

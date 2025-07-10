@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from crawling_view.utils.constants import GenieSelectors, GenieSettings, CommonSettings
 from crawling_view.utils.utils import make_soup, get_current_timestamp
-from crawling_view.utils.matching import compare_song_info
+from crawling_view.utils.matching import compare_song_info_multilang
 
 logger = logging.getLogger(__name__)
 
@@ -19,30 +19,38 @@ class GenieCrawler:
         self.driver = driver
         self.wait = WebDriverWait(driver, CommonSettings.DEFAULT_WAIT_TIME)
     
-    def crawl_song(self, song_title, artist_name, song_id=None):
+    def crawl_song(self, song_info):
         """
         단일 곡 크롤링
         
         Args:
-            song_title (str): 곡 제목
-            artist_name (str): 아티스트명
-            song_id (str, optional): SongInfo의 pk값
+            song_info (dict): 곡 정보 (title_ko, title_en, artist_ko, artist_en)
             
         Returns:
             dict: 크롤링 결과 또는 None
         """
         try:
-            # 검색 실행
-            html = self._search_song(song_title, artist_name)
-            if not html:
-                return None
+            # 먼저 국문으로 검색
+            logger.info("🔍 국문으로 검색 시도")
+            html = self._search_song(song_info['title_ko'], song_info['artist_ko'])
+            if html:
+                result = self._parse_song_info(html, song_info)
+                if result:
+                    return result
             
-            # 파싱 실행
-            result = self._parse_song_info(html, song_title, artist_name, song_id)
-            return result
+            # 국문 검색 실패시 영문으로 검색
+            logger.info("🔍 영문으로 검색 시도")
+            html = self._search_song(song_info['title_en'], song_info['artist_en'])
+            if html:
+                result = self._parse_song_info(html, song_info)
+                if result:
+                    return result
+            
+            logger.warning(f"❌ 모든 검색 시도 실패: {song_info}")
+            return None
             
         except Exception as e:
-            logger.error(f"❌ 곡 크롤링 실패 ({song_title} - {artist_name}): {e}", exc_info=True)
+            logger.error(f"❌ 곡 크롤링 실패: {e}", exc_info=True)
             return None
     
     def _search_song(self, song_title, artist_name):
@@ -183,22 +191,20 @@ class GenieCrawler:
             logger.error(f"❌ 곡 정보 버튼 클릭 실패: {e}")
             return None
     
-    def _parse_song_info(self, html, target_song, target_artist, song_id=None):
+    def _parse_song_info(self, html, target_song_info):
         """
         곡 정보 페이지 HTML 파싱
         
         Args:
             html (str): 곡 정보 페이지 HTML
-            target_song (str): 검색한 곡명
-            target_artist (str): 검색한 아티스트명
-            song_id (str, optional): SongInfo의 pk값
+            target_song_info (dict): 검색한 곡 정보 (title_ko, title_en, artist_ko, artist_en)
             
         Returns:
             dict: 파싱된 곡 정보 또는 None
         """
         for attempt in range(GenieSettings.MAX_PARSE_ATTEMPTS):
             try:
-                logger.info(f"[시도 {attempt+1}/{GenieSettings.MAX_PARSE_ATTEMPTS}] '{target_artist} - {target_song}' 정보 추출 시도 중...")
+                logger.info(f"[시도 {attempt+1}/{GenieSettings.MAX_PARSE_ATTEMPTS}] '{target_song_info['artist_ko']} - {target_song_info['title_ko']}' 정보 추출 시도 중...")
                 
                 soup = make_soup(html)
                 if not soup:
@@ -214,17 +220,13 @@ class GenieCrawler:
                 artist_name = self._extract_artist_name(soup)
                 if not artist_name:
                     logger.warning("❌ 아티스트명 추출 실패, 검색한 값 사용")
-                    artist_name = target_artist
+                    artist_name = target_song_info['artist_ko'] # 국문 아티스트명 사용
                 
                 # 곡명과 아티스트명 검증 (엄격한 매칭)
-                comparison_result = compare_song_info(song_title, artist_name, target_song, target_artist)
+                comparison_result = compare_song_info_multilang(song_title, artist_name, target_song_info)
                 
                 if not comparison_result['both_match']:
-                    if not comparison_result['title_match']:
-                        logger.warning(f"❌ 곡명 불일치: '{comparison_result['normalized_song']}' != '{comparison_result['normalized_target_song']}'")
-                    if not comparison_result['artist_match']:
-                        logger.warning(f"❌ 아티스트명 불일치: '{comparison_result['normalized_artist']}' != '{comparison_result['normalized_target_artist']}'")
-                    logger.warning(f"❌ 매칭 타입: {comparison_result.get('match_type', 'unknown')}")
+                    logger.warning(f"❌ 매칭 실패: {comparison_result}")
                     continue
                 
                 # 조회수 정보 추출
@@ -237,7 +239,7 @@ class GenieCrawler:
                     'views': view_data.get('views', -1),
                     'listeners': view_data.get('listeners', -1),
                     'crawl_date': get_current_timestamp(),
-                    'song_id': song_id
+                    'song_id': None # song_id는 크롤링 중에는 알 수 없으므로 None
                 }
                 
                 logger.info(f"✅ '{song_title}' - '{artist_name}' 파싱 성공!")
@@ -247,7 +249,7 @@ class GenieCrawler:
                 logger.error(f"❌ 파싱 시도 {attempt+1}/{GenieSettings.MAX_PARSE_ATTEMPTS} 실패: {e}", exc_info=True)
                 continue
         
-        logger.warning(f"❌ '{target_song}' 파싱 실패 - 모든 시도 실패")
+        logger.warning(f"❌ '{target_song_info['title_ko']}' 파싱 실패 - 모든 시도 실패")
         return None
     
     def _extract_song_title(self, soup):

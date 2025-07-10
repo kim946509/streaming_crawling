@@ -108,7 +108,7 @@ def get_song_info_id(platform, **kwargs):
                 logger.warning(f"❌ Genie artist_name 또는 song_name 누락")
                 return None
             
-            song_info = SongInfo.objects.get(genie_artist=artist_name, genie_title=song_name)
+            song_info = SongInfo.objects.get(artist_ko=artist_name, title_ko=song_name)
             # SongInfo 조회 성공은 디버그 레벨로 변경
             pass
             
@@ -131,7 +131,7 @@ def get_song_info_id(platform, **kwargs):
                 logger.warning(f"❌ YouTube Music artist_name 또는 song_name 누락")
                 return None
             
-            song_info = SongInfo.objects.get(youtube_music_artist=artist_name, youtube_music_title=song_name)
+            song_info = SongInfo.objects.get(artist_ko=artist_name, title_ko=song_name)
             # SongInfo 조회 성공은 디버그 레벨로 변경
             pass
             

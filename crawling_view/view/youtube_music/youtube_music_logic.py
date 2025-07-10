@@ -16,7 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from crawling_view.utils.constants import YouTubeMusicSelectors, CommonSettings
 from crawling_view.utils.utils import normalize_text, make_soup, get_current_timestamp, convert_view_count
-from crawling_view.utils.matching import compare_song_info
+from crawling_view.utils.matching import compare_song_info_multilang
 
 # .env 파일 로드
 load_dotenv()
@@ -381,14 +381,12 @@ class YouTubeMusicCrawler:
             logger.error(f"❌ 수동 로그인 실패: {e}", exc_info=True)
             return False
     
-    def crawl_song(self, song_title, artist_name, song_id=None):
+    def crawl_song(self, song_info):
         """
         단일 곡 크롤링
         
         Args:
-            song_title (str): 곡 제목
-            artist_name (str): 아티스트명
-            song_id (str, optional): SongInfo의 pk값
+            song_info (dict): 곡 정보 (title_ko, title_en, artist_ko, artist_en)
             
         Returns:
             dict: 크롤링 결과 또는 None
@@ -398,17 +396,27 @@ class YouTubeMusicCrawler:
                 logger.error("❌ 로그인이 필요합니다.")
                 return None
             
-            # 검색 실행
-            html = self._search_song(song_title, artist_name)
-            if not html:
-                return None
+            # 먼저 국문으로 검색
+            logger.info("🔍 국문으로 검색 시도")
+            html = self._search_song(song_info['title_ko'], song_info['artist_ko'])
+            if html:
+                result = self._parse_song_info(html, song_info)
+                if result:
+                    return result
             
-            # 파싱 실행
-            result = self._parse_song_info(html, song_title, artist_name, song_id)
-            return result
+            # 국문 검색 실패시 영문으로 검색
+            logger.info("🔍 영문으로 검색 시도")
+            html = self._search_song(song_info['title_en'], song_info['artist_en'])
+            if html:
+                result = self._parse_song_info(html, song_info)
+                if result:
+                    return result
+            
+            logger.warning(f"❌ 모든 검색 시도 실패: {song_info}")
+            return None
             
         except Exception as e:
-            logger.error(f"❌ 곡 크롤링 실패 ({song_title} - {artist_name}): {e}", exc_info=True)
+            logger.error(f"❌ 곡 크롤링 실패: {e}", exc_info=True)
             return None
     
     def _search_song(self, song_title, artist_name):
@@ -607,9 +615,9 @@ class YouTubeMusicCrawler:
         self._log_page_state()
         return None
     
-    def _parse_song_info(self, html, target_song, target_artist, song_id=None):
+    def _parse_song_info(self, html, song_info):
         try:
-            logger.info(f"[파싱] '{target_artist} - {target_song}' 정보 추출 시도 중...")
+            logger.info(f"[파싱] '{song_info['artist_ko']} - {song_info['title_ko']}' 정보 추출 시도 중...")
             
             soup = make_soup(html)
             if not soup:
@@ -639,6 +647,7 @@ class YouTubeMusicCrawler:
             if not song_items:
                 logger.warning("⚠️ 모든 셀렉터에서 검색 결과를 찾지 못했습니다")
                 logger.info(f"🔍 YouTube Music 검색 결과: 0개 곡 발견")
+                return None
             
             for i, item in enumerate(song_items):
                 logger.info(f"🔍 검사 중인 곡 {i+1}/{len(song_items)}")
@@ -659,10 +668,7 @@ class YouTubeMusicCrawler:
                     view_count = self._extract_view_count(item)
 
                     # matching.py의 compare_song_info 함수 사용
-                    match_result = compare_song_info(
-                        song_title, artist_name, 
-                        target_song, target_artist
-                    )
+                    match_result = compare_song_info_multilang(song_title, artist_name, song_info)
                     
                     logger.debug(f"매칭 결과: {match_result}")
                     
@@ -672,20 +678,19 @@ class YouTubeMusicCrawler:
                             'artist_name': artist_name,
                             'views': convert_view_count(view_count),
                             'listeners': -1,  # YouTube Music은 청취자 수 제공 안함
-                            'crawl_date': get_current_timestamp(),
-                            'song_id': song_id
+                            'crawl_date': get_current_timestamp()
                         }
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
                     else:
-                        logger.debug(f"매칭 실패: 제목={match_result['title_match']}, 아티스트={match_result['artist_match']}, 타입={match_result['match_type']}")
+                        logger.debug(f"매칭 실패: {match_result}")
 
                 except Exception as e:
                     logger.warning(f"개별 곡 파싱 중 예외 발생: {e}")
                     continue
 
             # 일치하는 곡을 찾지 못한 경우
-            logger.warning(f"[실패] '{target_artist} - {target_song}'와 일치하는 곡을 찾지 못함")
+            logger.warning(f"[실패] '{song_info['artist_ko']} - {song_info['title_ko']}'와 일치하는 곡을 찾지 못함")
             return None
             
         except Exception as e:

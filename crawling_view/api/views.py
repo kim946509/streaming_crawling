@@ -70,8 +70,8 @@ class CrawlSingleSongAPIView(APIView):
                     'status': 'error',
                     'message': '크롤링 가능한 플랫폼이 없습니다.',
                     'song_info': {
-                        'title': song.genie_title,
-                        'artist': song.genie_artist,
+                        'title': song.title_ko,
+                        'artist': song.artist_ko,
                         'available_platforms': []
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -97,8 +97,8 @@ class CrawlSingleSongAPIView(APIView):
                 'song_id': song_id,
                 'process_id': process.pid,
                 'song_info': {
-                    'title': song.genie_title,
-                    'artist': song.genie_artist,
+                    'title': song.title_ko,
+                    'artist': song.artist_ko,
                     'available_platforms': available_platforms
                 }
             }, status=status.HTTP_200_OK)

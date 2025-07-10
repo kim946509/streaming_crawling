@@ -40,6 +40,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DJANGO_SETTINGS_MODULE=config.settings
+    volumes:
+      - ./logs:/app/logs
+      - ./csv_folder:/app/csv_folder
     command: >
       bash -c "
       pwd &&
