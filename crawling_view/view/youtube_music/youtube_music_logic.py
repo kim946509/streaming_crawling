@@ -611,22 +611,6 @@ class YouTubeMusicCrawler:
         try:
             logger.info(f"[파싱] '{target_artist} - {target_song}' 정보 추출 시도 중...")
             
-            # HTML을 임시 파일로 저장
-            import os
-            import tempfile
-            
-            # 임시 파일 생성 (temp 폴더에)
-            temp_dir = "temp"
-            if not os.path.exists(temp_dir):
-                os.makedirs(temp_dir)
-            
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{temp_dir}/youtube_music_search_{timestamp}.html"
-            
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write(self.driver.page_source)
-            logger.info(f"🔍 검색 결과 HTML 저장됨: {filename}")
-            
             soup = make_soup(html)
             if not soup:
                 return None
