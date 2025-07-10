@@ -7,6 +7,8 @@ import logging
 import re
 import pickle
 import os
+from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -28,74 +30,127 @@ class YouTubeMusicCrawler:
         self.youtube_music_id = os.getenv('YOUTUBE_MUSIC_ID', '')
         self.youtube_music_password = os.getenv('YOUTUBE_MUSIC_PASSWORD', '')
         self.is_logged_in = False
-        self.cookies_file = "cookies.pkl"
+        
+        # 쿠키 파일 경로 설정 (절대 경로 사용)
+        cookies_dir = Path("/app/cookies")
+        if not cookies_dir.exists():
+            cookies_dir.mkdir(parents=True, exist_ok=True)
+        self.cookies_file = cookies_dir / "youtube_music_cookies.pkl"
     
     def _load_cookies(self):
         """저장된 쿠키 로드"""
         try:
-            if os.path.exists(self.cookies_file):
+            if self.cookies_file.exists():
                 with open(self.cookies_file, 'rb') as f:
                     cookies = pickle.load(f)
                 logger.info(f"🍪 저장된 쿠키 로드: {len(cookies)}개")
                 return cookies
         except Exception as e:
             logger.warning(f"쿠키 로드 실패: {e}")
+            # 쿠키 파일이 손상된 경우 삭제
+            try:
+                if self.cookies_file.exists():
+                    self.cookies_file.unlink()
+                    logger.info("손상된 쿠키 파일 삭제됨")
+            except Exception as e:
+                logger.warning(f"쿠키 파일 삭제 실패: {e}")
         return None
     
     def _is_cookie_expired(self, cookies):
         """쿠키 만료 여부 확인"""
         try:
-            import time
             current_time = time.time()
+            cookie_creation_time = os.path.getmtime(self.cookies_file) if self.cookies_file.exists() else current_time
             
             for cookie in cookies:
-                # expires 필드가 있는 경우 확인 (절대 시간)
+                # expiry 필드로 만료 확인
                 if 'expiry' in cookie:
                     if cookie['expiry'] < current_time:
                         logger.info(f"🍪 쿠키 만료됨 (expiry): {cookie.get('name', 'unknown')}")
                         return True
                 
-                # maxAge 필드가 있는 경우 확인 (상대 시간 - 쿠키 생성 시점부터의 유효 시간)
-                # maxAge는 쿠키 생성 시점부터의 유효 시간이므로, 
-                # 실제로는 쿠키 생성 시간을 알아야 정확히 계산할 수 있음
-                # 하지만 일반적으로 maxAge가 있는 쿠키는 session cookie이므로 
-                # 브라우저 세션이 유지되는 한 유효함
-                if 'maxAge' in cookie and cookie['maxAge'] > 0:
-                    # maxAge가 있는 쿠키는 세션 쿠키로 간주하고 만료되지 않았다고 판단
-                    logger.debug(f"🍪 세션 쿠키 발견: {cookie.get('name', 'unknown')} (maxAge: {cookie['maxAge']})")
-                    continue
+                # maxAge 필드로 만료 확인
+                if 'maxAge' in cookie:
+                    max_age = cookie['maxAge']
+                    if max_age > 0:  # 양수인 경우만 체크
+                        cookie_age = current_time - cookie_creation_time
+                        if cookie_age > max_age:
+                            logger.info(f"🍪 쿠키 만료됨 (maxAge): {cookie.get('name', 'unknown')}")
+                            return True
             
+            # 쿠키 파일이 24시간 이상 된 경우 만료 처리
+            if (current_time - cookie_creation_time) > 24 * 60 * 60:
+                logger.info("🍪 쿠키 파일이 24시간 이상 되어 만료 처리")
+                return True
+                
             return False
         except Exception as e:
             logger.warning(f"쿠키 만료 확인 실패: {e}")
-            return False
+            return True  # 에러 발생 시 안전하게 만료된 것으로 처리
     
     def _save_cookies(self):
         """현재 쿠키 저장"""
         try:
             cookies = self.driver.get_cookies()
+            if not cookies:
+                logger.warning("저장할 쿠키가 없습니다")
+                return False
+                
+            # 쿠키 디렉토리 생성
+            self.cookies_file.parent.mkdir(parents=True, exist_ok=True)
+            
             with open(self.cookies_file, 'wb') as f:
                 pickle.dump(cookies, f)
             logger.info(f"🍪 쿠키 저장 완료: {len(cookies)}개")
+            return True
         except Exception as e:
             logger.error(f"쿠키 저장 실패: {e}")
+            return False
     
     def _apply_cookies(self, cookies):
         """쿠키 적용"""
         try:
             # 먼저 YouTube Music 페이지로 이동
-            self.driver.get("https://music.youtube.com/")
+            self.driver.get("https://music.youtube.com")
             time.sleep(2)
             
-            # 쿠키 적용
+            # 기존 쿠키 모두 삭제
+            self.driver.delete_all_cookies()
+            time.sleep(1)
+            
+            # 새 쿠키 적용
+            success_count = 0
             for cookie in cookies:
                 try:
+                    # 쿠키 정보 로깅
+                    logger.debug(f"처리 중인 쿠키 정보:")
+                    for key, value in cookie.items():
+                        logger.debug(f"  - {key}: {value}")
+                    
+                    # domain 필드가 없는 경우에만 기본값 설정
+                    if 'domain' not in cookie:
+                        cookie['domain'] = '.youtube.com'
+                    
+                    # 쿠키를 있는 그대로 적용
                     self.driver.add_cookie(cookie)
+                    success_count += 1
+                    logger.debug(f"✅ 쿠키 적용 성공: {cookie.get('name', 'unknown')}")
+                    
                 except Exception as e:
-                    logger.warning(f"쿠키 적용 실패: {cookie.get('name', 'unknown')} - {e}")
+                    logger.warning(f"개별 쿠키 적용 실패: {cookie.get('name', 'unknown')} - {e}")
             
-            logger.info("🍪 쿠키 적용 완료")
-            return True
+            logger.info(f"🍪 쿠키 적용 완료 ({success_count}/{len(cookies)}개 성공)")
+            
+            # 페이지 새로고침
+            self.driver.refresh()
+            time.sleep(2)
+            
+            # 적용된 쿠키 확인
+            current_cookies = self.driver.get_cookies()
+            logger.info(f"현재 브라우저에 설정된 쿠키 수: {len(current_cookies)}")
+            
+            return success_count > 0
+            
         except Exception as e:
             logger.error(f"쿠키 적용 실패: {e}")
             return False
@@ -103,14 +158,102 @@ class YouTubeMusicCrawler:
     def _check_login_status(self):
         """로그인 상태 확인"""
         try:
-            # 로그인 버튼이 있는지 확인
-            login_buttons = self.driver.find_elements(By.CSS_SELECTOR, 'a[aria-label="로그인"]')
-            if not login_buttons or not login_buttons[0].is_displayed():
-                logger.info("✅ 이미 로그인된 상태")
-                return True
-            else:
-                logger.info("❌ 로그인되지 않은 상태")
-                return False
+            # 페이지 새로고침
+            self.driver.get("https://music.youtube.com")
+            time.sleep(2)
+            
+            # 1. 로그인 버튼 확인 (로그아웃 상태 체크)
+            login_selectors = [
+                'a[aria-label="로그인"]',
+                'a[aria-label="Sign in"]',
+                'ytmusic-button-renderer[is-sign-in-button]',
+                'paper-button[aria-label="로그인"]',
+                'paper-button[aria-label="Sign in"]'
+            ]
+            
+            for selector in login_selectors:
+                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                if elements and elements[0].is_displayed():
+                    logger.info(f"❌ 로그인되지 않은 상태 (로그인 버튼 발견: {selector})")
+                    return False
+            
+            # 2. 로그인 상태 확인 (여러 방법으로 체크)
+            login_indicators = [
+                # 프로필 아이콘
+                'ytmusic-settings-button',
+                'img.ytmusic-settings-button',
+                # 아바타 이미지
+                'yt-img-shadow#avatar',
+                'img#img[alt="Avatar image"]',
+                # 계정 메뉴
+                'ytmusic-menu-renderer[slot="menu"]',
+                # 업로드 버튼 (로그인된 상태에서만 표시)
+                'ytmusic-upload-button',
+                # 라이브러리 링크 (로그인된 상태에서만 표시)
+                'a[href="/library"]',
+                'yt-formatted-string[title="라이브러리"]',
+                'yt-formatted-string[title="Library"]'
+            ]
+            
+            for selector in login_indicators:
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements and elements[0].is_displayed():
+                        logger.info(f"✅ 로그인된 상태 확인됨 (지표: {selector})")
+                        return True
+                except Exception as e:
+                    logger.debug(f"셀렉터 확인 중 오류: {selector} - {e}")
+            
+            # 3. 페이지 타이틀 확인
+            try:
+                title = self.driver.title
+                if "YouTube Music" in title and not any(x in title.lower() for x in ["sign in", "로그인"]):
+                    logger.info("✅ 로그인된 상태 확인됨 (페이지 타이틀 기반)")
+                    return True
+            except Exception as e:
+                logger.debug(f"타이틀 확인 중 오류: {e}")
+            
+            # 4. 현재 URL 확인
+            try:
+                current_url = self.driver.current_url
+                if "music.youtube.com" in current_url and not any(x in current_url.lower() for x in ["signin", "login"]):
+                    logger.info("✅ 로그인된 상태 확인됨 (URL 기반)")
+                    return True
+            except Exception as e:
+                logger.debug(f"URL 확인 중 오류: {e}")
+            
+            # 5. 쿠키 기반 확인
+            try:
+                cookies = self.driver.get_cookies()
+                auth_cookies = [c for c in cookies if any(x in c.get('name', '').lower() for x in ['sid', 'ssid', 'hsid', 'auth', 'apisid', 'sapisid'])]
+                if auth_cookies:
+                    logger.info(f"✅ 로그인된 상태 확인됨 (인증 쿠키 {len(auth_cookies)}개 발견)")
+                    return True
+            except Exception as e:
+                logger.debug(f"쿠키 확인 중 오류: {e}")
+            
+            # 6. 페이지 소스 확인
+            try:
+                page_source = self.driver.page_source
+                if 'ytmusic-app' in page_source and not any(x in page_source.lower() for x in ['sign in to continue', '로그인하세요']):
+                    logger.info("✅ 로그인된 상태 확인됨 (페이지 소스 기반)")
+                    return True
+            except Exception as e:
+                logger.debug(f"페이지 소스 확인 중 오류: {e}")
+            
+            logger.warning("⚠️ 로그인 상태를 명확히 판단할 수 없음 (모든 확인 방법 실패)")
+            
+            # 현재 페이지 상태 디버깅을 위한 스크린샷 저장
+            try:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                screenshot_path = f"logs/login_check_{timestamp}.png"
+                self.driver.save_screenshot(screenshot_path)
+                logger.info(f"📸 로그인 상태 확인 스크린샷 저장됨: {screenshot_path}")
+            except Exception as e:
+                logger.debug(f"스크린샷 저장 실패: {e}")
+            
+            return False
+            
         except Exception as e:
             logger.warning(f"로그인 상태 확인 실패: {e}")
             return False
@@ -344,7 +487,7 @@ class YouTubeMusicCrawler:
                         logger.warning(f"⚠️ 검색어가 제대로 입력되지 않음: '{current_value}' != '{query}'")
                         # 다시 입력 시도
                         search_input.clear()
-                        time.sleep(0.5)
+                        time.sleep(1)
                         search_input.send_keys(query)
                         time.sleep(1)
                     
@@ -352,7 +495,7 @@ class YouTubeMusicCrawler:
                     search_input.send_keys(Keys.RETURN)
                     logger.info("✅ Enter 키로 검색 실행")
                     
-                    time.sleep(0.5)  # 검색 실행 후 대기 시간 단축
+                    time.sleep(1)  # 검색 실행 후 대기 시간 단축
                     
                     # "노래" 탭 클릭 (다국어 지원)
                     song_tab_clicked = False
@@ -384,7 +527,7 @@ class YouTubeMusicCrawler:
                     if not song_tab_clicked:
                         logger.warning("⚠️ 모든 노래 탭 셀렉터 실패, 탭 클릭 없이 계속 진행")
                     
-                    time.sleep(1)  # 원래 대기 시간으로 복원
+                    time.sleep(2)  # 원래 대기 시간으로 복원
                     
                     # HTML 반환
                     html = self.driver.page_source
@@ -471,7 +614,6 @@ class YouTubeMusicCrawler:
             # HTML을 임시 파일로 저장
             import os
             import tempfile
-            from datetime import datetime
             
             # 임시 파일 생성 (temp 폴더에)
             temp_dir = "temp"

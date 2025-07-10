@@ -37,13 +37,18 @@ services:
       - db
     env_file:
       - .env
-    volumes:
-      - ./logs:/app/logs
-      - ./csv_folder:/app/csv_folder
-    # 필요시 포트 매핑 추가 (예: Django dev server 사용시)
-    # ports:
-    #   - "8000:8000"
-    # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DJANGO_SETTINGS_MODULE=config.settings
+    command: >
+      bash -c "
+      pwd &&
+      ls -la / &&
+      ls -la /app &&
+      service cron start &&
+      python3 crawling_view/controller/run_crawling.py &&
+      tail -f /dev/null
+      "
 
 volumes:
   db_data:
