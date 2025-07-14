@@ -132,7 +132,9 @@ def exact_and_partial_match(found_text, target_texts, found_artist, target_artis
     text_match = any(
         found_text == target or
         (len(found_text) >= 3 and found_text in target) or
-        (len(target) >= 3 and target in found_text)
+        (len(target) >= 3 and target in found_text) or
+        # 괄호 안의 영어 제목 제거 후 매칭
+        _match_title_with_brackets(found_text, target)
         for target in target_texts if target
     )
     
@@ -145,9 +147,80 @@ def exact_and_partial_match(found_text, target_texts, found_artist, target_artis
     logger.debug(f"정확/부분 매칭: 텍스트={text_match}, 아티스트={artist_match}")
     return text_match, artist_match
 
+def _match_title_with_brackets(found_title, target_title):
+    """
+    괄호 안의 다양한 내용을 고려한 제목 매칭
+    
+    Args:
+        found_title (str): 찾은 제목 (예: "어떻게 이별까지 사랑하겠어, 널 사랑하는 거지(How can I love the heartbreak, you're the one I love)")
+        target_title (str): 목표 제목 (예: "어떻게 이별까지 사랑하겠어, 널 사랑하는 거지")
+        
+    Returns:
+        bool: 매칭 성공 여부
+    """
+    import re
+    
+    # 1. 괄호 안의 모든 내용 제거한 버전으로 매칭
+    cleaned_found = re.sub(r'\([^)]*\)', '', found_title).strip()
+    
+    if cleaned_found == target_title:
+        logger.debug(f"괄호 제거 후 정확 매칭: '{cleaned_found}' == '{target_title}'")
+        return True
+    
+    if len(cleaned_found) >= 3 and cleaned_found in target_title:
+        logger.debug(f"괄호 제거 후 포함 매칭: '{cleaned_found}' in '{target_title}'")
+        return True
+    
+    if len(target_title) >= 3 and target_title in cleaned_found:
+        logger.debug(f"괄호 제거 후 포함 매칭: '{target_title}' in '{cleaned_found}'")
+        return True
+    
+    # 2. 괄호 안의 모든 내용을 추출해서 매칭 시도
+    bracket_matches = re.findall(r'\(([^)]*)\)', found_title)
+    for bracket_content in bracket_matches:
+        bracket_content = bracket_content.strip()
+        
+        # 괄호 내용과 목표 제목 매칭
+        if bracket_content == target_title:
+            logger.debug(f"괄호 내용 정확 매칭: '{bracket_content}' == '{target_title}'")
+            return True
+        
+        if len(bracket_content) >= 3 and bracket_content in target_title:
+            logger.debug(f"괄호 내용 포함 매칭: '{bracket_content}' in '{target_title}'")
+            return True
+        
+        if len(target_title) >= 3 and target_title in bracket_content:
+            logger.debug(f"괄호 내용 포함 매칭: '{target_title}' in '{bracket_content}'")
+            return True
+    
+    # 3. 목표 제목이 괄호 안에 있는지 확인
+    if '(' in found_title and target_title in found_title:
+        logger.debug(f"목표 제목이 괄호 안에 포함: '{target_title}' in '{found_title}'")
+        return True
+    
+    # 4. 괄호 안의 영어 제목만 추출해서 매칭 (기존 로직 유지)
+    english_bracket_match = re.search(r'\(([^)]*[a-zA-Z][^)]*)\)', found_title)
+    if english_bracket_match:
+        english_title = english_bracket_match.group(1).strip()
+        
+        # 영어 제목과 목표 제목 매칭
+        if english_title == target_title:
+            logger.debug(f"영어 괄호 내용 정확 매칭: '{english_title}' == '{target_title}'")
+            return True
+        
+        if len(english_title) >= 3 and english_title in target_title:
+            logger.debug(f"영어 괄호 내용 포함 매칭: '{english_title}' in '{target_title}'")
+            return True
+        
+        if len(target_title) >= 3 and target_title in english_title:
+            logger.debug(f"영어 괄호 내용 포함 매칭: '{target_title}' in '{english_title}'")
+            return True
+    
+    return False
+
 def _match_artist_names(artist1, artist2):
     """
-    아티스트명 매칭 (단순한 방식)
+    아티스트명 매칭 (유연한 방식)
     
     Args:
         artist1 (str): 첫 번째 아티스트명
@@ -160,9 +233,33 @@ def _match_artist_names(artist1, artist2):
     if artist1 == artist2:
         return True
     
-    # 2. 부분 문자열 매칭
+    # 2. 부분 문자열 매칭 (더 유연하게)
     if (len(artist1) >= 2 and artist1 in artist2) or (len(artist2) >= 2 and artist2 in artist1):
         return True
+    
+    # 3. 공통 키워드 매칭 (2글자 이상의 공통 부분)
+    common_chars = set(artist1) & set(artist2)
+    if len(common_chars) >= 2:
+        # 공통 문자들이 연속적으로 나타나는지 확인
+        for char in common_chars:
+            if char in artist1 and char in artist2:
+                # 각 아티스트명에서 해당 문자의 위치 확인
+                pos1 = artist1.find(char)
+                pos2 = artist2.find(char)
+                # 같은 위치 근처에 있으면 매칭 가능성 높음
+                if abs(pos1 - pos2) <= 2:
+                    return True
+    
+    # 4. 특별한 케이스 처리
+    special_cases = {
+        ('악뮤', '악동뮤지션'): True,
+        ('악동뮤지션', '악뮤'): True,
+        ('akmu', '악동뮤지션'): True,
+        ('악동뮤지션', 'akmu'): True,
+    }
+    
+    if (artist1, artist2) in special_cases:
+        return special_cases[(artist1, artist2)]
     
     return False
 

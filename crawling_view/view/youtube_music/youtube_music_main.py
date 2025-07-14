@@ -48,7 +48,8 @@ def run_youtube_music_crawling(song_list, save_csv=True, save_db=True):
                     'title_ko': song_title,
                     'title_en': song_info.get('title_en', ''),  # 영문 제목이 있으면 사용
                     'artist_ko': artist_name, 
-                    'artist_en': song_info.get('artist_en', '')  # 영문 아티스트가 있으면 사용
+                    'artist_en': song_info.get('artist_en', ''),  # 영문 아티스트가 있으면 사용
+                    'song_id': song_id  # song_id 반드시 포함
                 }
                 
                 # 크롤링 실행

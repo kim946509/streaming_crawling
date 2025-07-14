@@ -196,11 +196,11 @@ def _save_crawling_data(results, platform, platform_type):
             today = date.today()
             
             try:
-                # 같은 song_id, platform, 오늘 날짜의 기존 데이터 삭제
+                # 같은 song_id, platform, 오늘 날짜(일 단위)의 기존 데이터 삭제
                 deleted_count = CrawlingData.objects.filter(
                     song_id=clean_data['song_id'],
                     platform=platform_type,
-                    created_at__date=today
+                    created_at__date=today  # 반드시 date만 비교
                 ).delete()[0]
                 
                 # 새 데이터 생성
@@ -213,11 +213,11 @@ def _save_crawling_data(results, platform, platform_type):
                 
                 if deleted_count > 0:
                     updated_count += 1
-                    logger.debug(f"✅ {platform} 데이터 교체: song_id={song_id} (기존 {deleted_count}개 삭제)")
+                    logger.info(f"✅ {platform} 데이터 교체(업데이트): song_id={song_id} (기존 {deleted_count}개 삭제 후 새로 저장)")
                 else:
                     saved_count += 1
-                    logger.debug(f"✅ {platform} 새 데이터 생성: song_id={song_id}")
-                    
+                    logger.info(f"✅ {platform} 새 데이터 생성: song_id={song_id}")
+                
             except Exception as e:
                 failed_count += 1
                 logger.error(f"❌ {platform} DB 저장/업데이트 실패: {result} - {e}")

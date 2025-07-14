@@ -109,48 +109,68 @@ def get_current_timestamp():
 def convert_view_count(view_count_text):
     """
     조회수 텍스트를 숫자로 변환 (한글/영어 모두 지원)
-    
-    Args:
-        view_count_text (str): 조회수 텍스트 
-        - 한글: "1.5만 회", "2.3천 회", "1,234회"
-        - 영어: "1.5M views", "2.3K views", "1,234 views"
-        
-    Returns:
-        int: 변환된 숫자 또는 None
     """
     if not view_count_text:
         return None
-        
-    # 소문자 변환 및 공통 문자 제거
+
+    logger.debug(f"🔍 조회수 변환 시작: 원본='{view_count_text}'")
+
+    # 소문자 변환 및 불필요한 문자 제거
     view_count_text = view_count_text.lower()
-    view_count_text = view_count_text.replace(',', '').replace('조회수', '').replace('회', '').replace('views', '').replace('view', '').strip()
-    
+    view_count_text = view_count_text.replace(',', '')
+    for word in ['조회수', '회', 'views', 'view', '재생']:
+        view_count_text = view_count_text.replace(word, '')
+    view_count_text = view_count_text.strip()
+
+    logger.debug(f"🔍 조회수 변환 정리 후: '{view_count_text}'")
+
     try:
-        # 한글 단위 처리
-        if '억' in view_count_text:
-            number = float(view_count_text.replace('억', ''))
-            return int(number * 100000000)
-        elif '만' in view_count_text:
-            number = float(view_count_text.replace('만', ''))
-            return int(number * 10000)
-        elif '천' in view_count_text:
-            number = float(view_count_text.replace('천', ''))
-            return int(number * 1000)
-        # 영어 단위 처리
-        elif 'b' in view_count_text:  # billion
-            number = float(view_count_text.replace('b', ''))
-            return int(number * 1000000000)
-        elif 'm' in view_count_text:  # million
-            number = float(view_count_text.replace('m', ''))
-            return int(number * 1000000)
-        elif 'k' in view_count_text:  # thousand
-            number = float(view_count_text.replace('k', ''))
-            return int(number * 1000)
+        import re
+        # 숫자와 단위 사이에 공백이 있어도 매칭
+        korean_pattern = r'^(\d+(?:\.\d+)?)[ ]*(억|만|천)$'
+        korean_match = re.match(korean_pattern, view_count_text)
+        if korean_match:
+            number = float(korean_match.group(1))
+            unit = korean_match.group(2)
+            if unit == '억':
+                result = int(number * 100000000)
+            elif unit == '만':
+                result = int(number * 10000)
+            elif unit == '천':
+                result = int(number * 1000)
+            logger.debug(f"✅ 한글 단위 변환 성공: {view_count_text} -> {result}")
+            return result
+
+        english_pattern = r'^(\d+(?:\.\d+)?)[ ]*([mMbBkK])$'
+        english_match = re.match(english_pattern, view_count_text)
+        if english_match:
+            number = float(english_match.group(1))
+            unit = english_match.group(2).lower()
+            if unit == 'b':
+                result = int(number * 1000000000)
+            elif unit == 'm':
+                result = int(number * 1000000)
+            elif unit == 'k':
+                result = int(number * 1000)
+            logger.debug(f"✅ 영어 단위 변환 성공: {view_count_text} -> {result}")
+            return result
+
         # 일반 숫자 처리
-        else:
-            return int(view_count_text)
-    except (ValueError, TypeError):
-        logger.error(f"❌ 조회수 변환 실패: {view_count_text}")
+        if re.match(r'^\d+$', view_count_text):
+            result = int(view_count_text)
+            logger.debug(f"✅ 일반 숫자 변환 성공: {view_count_text} -> {result}")
+            return result
+
+        # fallback: 단위가 남아있으면 제거 후 float 변환 시도
+        for unit, mul in [('억', 100000000), ('만', 10000), ('천', 1000), ('b', 1000000000), ('m', 1000000), ('k', 1000)]:
+            if unit in view_count_text:
+                number = float(view_count_text.replace(unit, '').strip())
+                result = int(number * mul)
+                logger.debug(f"✅ {unit} 단위 변환 성공 (기존 방식): {view_count_text} -> {result}")
+                return result
+
+    except (ValueError, TypeError) as e:
+        logger.error(f"❌ 조회수 변환 실패: '{view_count_text}' (오류: {e})")
         return None
 
 def find_with_selectors(soup, selectors, get_text=True):

@@ -642,6 +642,15 @@ class YouTubeMusicCrawler:
                     song_items = items
                     logger.info(f"🔍 YouTube Music 검색 결과: {len(song_items)}개 곡 발견 (셀렉터: {selector})")
                     logger.debug(f"매칭된 첫 번째 아이템 HTML: {items[0]}")
+                    # 상위 5개 곡명/아티스트 로그
+                    for idx, item in enumerate(song_items[:5]):
+                        try:
+                            title_tag = item.select_one(YouTubeMusicSelectors.SONG_TITLE)
+                            artist_col = item.select_one(YouTubeMusicSelectors.ARTIST_COLUMN)
+                            artist_tag = artist_col.select_one(YouTubeMusicSelectors.ARTIST_LINK) if artist_col else None
+                            logger.info(f"  [{idx+1}] 곡명: '{title_tag.get_text(strip=True) if title_tag else None}' / 아티스트: '{artist_tag.get_text(strip=True) if artist_tag else None}'")
+                        except Exception as e:
+                            logger.info(f"  [{idx+1}] 곡명/아티스트 추출 실패: {e}")
                     break
             
             if not song_items:
@@ -678,7 +687,8 @@ class YouTubeMusicCrawler:
                             'artist_name': artist_name,
                             'views': convert_view_count(view_count),
                             'listeners': -1,  # YouTube Music은 청취자 수 제공 안함
-                            'crawl_date': get_current_timestamp()
+                            'crawl_date': get_current_timestamp(),
+                            'song_id': song_info.get('song_id')  # song_id 추가
                         }
                         logger.info(f"[성공] 일치하는 곡 발견: {song_title} - {artist_name} ({view_count})")
                         return result
@@ -718,19 +728,39 @@ class YouTubeMusicCrawler:
         return None
     
     def _extract_view_count(self, item):
-        """조회수 추출"""
+        """조회수 추출 (aria-label, title, textContent 모두 검사)"""
         try:
             flex_columns = item.select(YouTubeMusicSelectors.VIEW_COUNT_FLEX)
+            logger.debug(f"🔍 발견된 flex-column 요소 수: {len(flex_columns)}")
             
-            for flex_col in flex_columns:
-                aria_label = flex_col.get('aria-label', '')
-                if '회' in aria_label and '재생' in aria_label:
-                    view_count = aria_label.replace('회', '').replace('재생', '').strip()
-                    logger.debug(f"✅ 조회수 추출 성공: {view_count}")
-                    return view_count
-            
+            for i, flex_col in enumerate(flex_columns):
+                # 1. aria-label 우선
+                view_text = flex_col.get('aria-label', '').strip()
+                # 2. 없으면 title
+                if not view_text:
+                    view_text = flex_col.get('title', '').strip()
+                # 3. 없으면 textContent
+                if not view_text:
+                    view_text = flex_col.get_text(strip=True)
+                logger.debug(f"🔍 flex-column {i+1}: view_text='{view_text}'")
+                
+                # 조회수 관련 키워드가 있는지 확인
+                view_keywords = ['회', '재생', 'views', 'view', '억', '만', '천', 'k', 'm', 'b']
+                if any(keyword in view_text.lower() for keyword in view_keywords):
+                    # 정규표현식으로 숫자+단위만 추출
+                    import re
+                    match = re.search(r'([\d,.]+(?:\.\d+)?)[ ]*([억만천mkb]*)', view_text.lower())
+                    if match:
+                        number = match.group(1)
+                        unit = match.group(2)
+                        view_count_str = f'{number}{unit}'
+                        logger.debug(f"✅ 조회수 추출 성공: '{view_text}' -> '{view_count_str}'")
+                        return view_count_str
+                    else:
+                        # 키워드는 있으나 패턴이 안 맞으면 원본 반환(후처리에서 걸러짐)
+                        return view_text
+            logger.warning("⚠️ flex-column에서 조회수 정보를 찾을 수 없음")
             return None
-            
         except Exception as e:
             logger.error(f"❌ 조회수 추출 실패: {e}")
             return None

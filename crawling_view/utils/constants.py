@@ -87,11 +87,11 @@ class YouTubeMusicSelectors:
         'input'                                  # 모든 input (최후의 fallback)
     ]
     SONG_TAB = [
+        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="노래"]]',   # 한글
         # 더 일반적인 셀렉터 추가
         '//a[contains(@class, "ytmusic-chip-cloud-chip-renderer") and @role="tab"]',  # role 속성 활용
         '//a[contains(@title, "노래") or contains(@title, "Songs")]',  # title 속성 활용
         '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string]',  # 어떤 텍스트든 상관없이
-        '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="노래"]]',   # 한글
         '//a[contains(@class, "yt-simple-endpoint") and contains(@class, "style-scope") and contains(@class, "ytmusic-chip-cloud-chip-renderer")]',  # 세 클래스 모두 포함된 a 태그(노래탭)
         '//*[@id="header"]//a[1]',  # 헤더 내 첫 번째 a 태그(언어/텍스트 무관, 최우선)
         '//a[contains(@class, "yt-simple-endpoint") and .//yt-formatted-string[text()="Songs"]]',  # 영어
@@ -111,6 +111,8 @@ class YouTubeMusicSelectors:
     
     # 곡 정보 추출 관련
     SONG_ITEMS = [
+        # 0. "노래" 섹션 컨테이너 내 곡만 추출 (최우선)
+        'div#contents.style-scope.ytmusic-shelf-renderer > ytmusic-responsive-list-item-renderer',
         # 1. 가장 기본적인 구조 매칭
         'ytmusic-responsive-list-item-renderer[class*="style-scope"]',  # class에 style-scope가 포함된 모든 요소
         
@@ -232,7 +234,7 @@ class CommonSettings:
         '--aggressive-cache-discard',  # 적극적인 캐시 삭제
         '--memory-pressure-off',  # 메모리 압박 해제
         '--max_old_space_size=4096',  # 메모리 제한 증가
-        '--headless',  # 헤드리스 모드 (GUI 없이 실행)
+        # '--headless',  # 헤드리스 모드 (GUI 없이 실행)
         '--disable-web-security',  # 웹 보안 비활성화 (헤드리스에서 필요할 수 있음)
         '--allow-running-insecure-content',  # 안전하지 않은 콘텐츠 허용
         '--disable-features=VizDisplayCompositor'  # 디스플레이 컴포지터 비활성화
