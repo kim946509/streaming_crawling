@@ -43,13 +43,17 @@ def run_genie_crawling(song_list, save_csv=True, save_db=True):
                     'title_ko': song_title,
                     'title_en': song_info.get('title_en', ''),  # 영문 제목이 있으면 사용
                     'artist_ko': artist_name,
-                    'artist_en': song_info.get('artist_en', '')  # 영문 아티스트가 있으면 사용
+                    'artist_en': song_info.get('artist_en', ''),  # 영문 아티스트가 있으면 사용
+                    'song_id': song_id  # song_id 추가
                 }
                 
                 # 크롤링 실행
                 result = crawler.crawl_song(song_data)
                 
                 if result:
+                    # song_id가 None인 경우 원본 song_id로 설정
+                    if result.get('song_id') is None:
+                        result['song_id'] = song_id
                     crawled_data.append(result)
                     logger.info(f"✅ 크롤링 완료: {result['song_title']} - {result['artist_name']} (조회수: {result['views']})")
                 else:

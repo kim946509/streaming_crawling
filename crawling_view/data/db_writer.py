@@ -150,7 +150,7 @@ def get_song_info_id(platform, **kwargs):
 
 def _save_crawling_data(results, platform, platform_type):
     """
-    크롤링 데이터 저장 공통 함수
+    크롤링 데이터 저장 공통 함수 (오늘 날짜 데이터 업데이트)
     
     Args:
         results (list/dict): 크롤링 결과
@@ -158,15 +158,16 @@ def _save_crawling_data(results, platform, platform_type):
         platform_type: PlatformType enum 값
         
     Returns:
-        dict: 저장 결과 (saved_count, failed_count, skipped_count)
+        dict: 저장 결과 (saved_count, failed_count, skipped_count, updated_count)
     """
     if not results:
         logger.warning(f"⚠️ {platform} 크롤링 결과가 없음")
-        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0}
+        return {'saved_count': 0, 'failed_count': 0, 'skipped_count': 0, 'updated_count': 0}
     
     saved_count = 0
     failed_count = 0
     skipped_count = 0
+    updated_count = 0
     
     # YouTube는 dict 형태, 나머지는 list 형태
     items = results.items() if isinstance(results, dict) else enumerate(results)
@@ -190,24 +191,43 @@ def _save_crawling_data(results, platform, platform_type):
                 skipped_count += 1
                 continue
             
-            # DB 저장
-            CrawlingData.objects.create(
-                song_id=clean_data['song_id'],
-                views=clean_data['views'],
-                listeners=clean_data['listeners'],
-                platform=platform_type
-            )
+            # 오늘 날짜의 기존 데이터 확인
+            from datetime import date
+            today = date.today()
             
-            saved_count += 1
-            # 성공한 DB 저장은 디버그 레벨로 변경
-            pass
+            try:
+                # 같은 song_id, platform, 오늘 날짜의 기존 데이터 삭제
+                deleted_count = CrawlingData.objects.filter(
+                    song_id=clean_data['song_id'],
+                    platform=platform_type,
+                    created_at__date=today
+                ).delete()[0]
+                
+                # 새 데이터 생성
+                CrawlingData.objects.create(
+                    song_id=clean_data['song_id'],
+                    views=clean_data['views'],
+                    listeners=clean_data['listeners'],
+                    platform=platform_type
+                )
+                
+                if deleted_count > 0:
+                    updated_count += 1
+                    logger.debug(f"✅ {platform} 데이터 교체: song_id={song_id} (기존 {deleted_count}개 삭제)")
+                else:
+                    saved_count += 1
+                    logger.debug(f"✅ {platform} 새 데이터 생성: song_id={song_id}")
+                    
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"❌ {platform} DB 저장/업데이트 실패: {result} - {e}")
             
         except Exception as e:
             failed_count += 1
             logger.error(f"❌ {platform} DB 저장 실패: {result} - {e}")
     
-    logger.info(f"✅ {platform} DB 저장 완료: {saved_count}개 성공, {failed_count}개 실패, {skipped_count}개 스킵")
-    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count}
+    logger.info(f"✅ {platform} DB 저장 완료: {saved_count}개 생성, {updated_count}개 교체, {failed_count}개 실패, {skipped_count}개 스킵")
+    return {'saved_count': saved_count, 'failed_count': failed_count, 'skipped_count': skipped_count, 'updated_count': updated_count}
 
 def save_genie_to_db(results):
     """

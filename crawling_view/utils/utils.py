@@ -127,7 +127,10 @@ def convert_view_count(view_count_text):
     
     try:
         # 한글 단위 처리
-        if '만' in view_count_text:
+        if '억' in view_count_text:
+            number = float(view_count_text.replace('억', ''))
+            return int(number * 100000000)
+        elif '만' in view_count_text:
             number = float(view_count_text.replace('만', ''))
             return int(number * 10000)
         elif '천' in view_count_text:

@@ -82,7 +82,7 @@ class YouTubeMusicCrawler:
             if (current_time - cookie_creation_time) > 24 * 60 * 60:
                 logger.info("🍪 쿠키 파일이 24시간 이상 되어 만료 처리")
                 return True
-                
+            
             return False
         except Exception as e:
             logger.warning(f"쿠키 만료 확인 실패: {e}")
@@ -252,7 +252,7 @@ class YouTubeMusicCrawler:
             except Exception as e:
                 logger.debug(f"스크린샷 저장 실패: {e}")
             
-            return False
+                return False
             
         except Exception as e:
             logger.warning(f"로그인 상태 확인 실패: {e}")

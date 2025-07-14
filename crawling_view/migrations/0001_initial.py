@@ -15,10 +15,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CrawlingPeriod',
             fields=[
-                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=36, primary_key=True, serialize=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='생성시간')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='수정시간')),
-                ('song_id', models.CharField(help_text='노래 ID (song_info.id 참조)', max_length=32)),
+                ('song_id', models.CharField(help_text='노래 ID (song_info.id 참조)', max_length=36)),
                 ('start_date', models.DateField(help_text='크롤링 시작일')),
                 ('end_date', models.DateField(help_text='크롤링 종료일')),
                 ('is_active', models.BooleanField(default=True, help_text='활성화화 여부')),
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SongInfo',
             fields=[
-                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=36, primary_key=True, serialize=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='생성시간')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='수정시간')),
                 ('artist_ko', models.CharField(default='unknown', help_text='아티스트명 (국문)', max_length=255)),
@@ -48,10 +48,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CrawlingData',
             fields=[
-                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(default=crawling_view.models.base.generate_uuid, editable=False, max_length=36, primary_key=True, serialize=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='생성시간')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='수정시간')),
-                ('song_id', models.CharField(help_text='노래 ID (song_info.id 참조)', max_length=32)),
+                ('song_id', models.CharField(help_text='노래 ID (song_info.id 참조)', max_length=36)),
                 ('views', models.BigIntegerField(help_text='조회수 (정상값: 숫자, 미지원: -1, 오류: -999)')),
                 ('listeners', models.BigIntegerField(help_text='청취자 수 (정상값: 숫자, 미지원: -1, 오류: -999)')),
                 ('platform', models.CharField(choices=[('melon', 'Melon'), ('genie', 'Genie'), ('youtube', 'YouTube'), ('youtube_music', 'YouTube Music')], help_text='플랫폼명', max_length=20)),

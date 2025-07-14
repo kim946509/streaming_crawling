@@ -119,6 +119,7 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
             platform_data = {
                 'crawled_count': 0,
                 'db_saved': 0,
+                'db_updated': 0,
                 'db_failed': 0,
                 'db_skipped': 0,
                 'csv_saved': 0,
@@ -142,10 +143,11 @@ def analyze_crawling_result(result, elapsed_time, start_datetime, end_datetime):
                 db_result = db_results[platform]
                 if isinstance(db_result, dict):
                     platform_data['db_saved'] = db_result.get('saved_count', 0)
+                    platform_data['db_updated'] = db_result.get('updated_count', 0)
                     platform_data['db_failed'] = db_result.get('failed_count', 0)
                     platform_data['db_skipped'] = db_result.get('skipped_count', 0)
                     
-                    total_saved_db += platform_data['db_saved']
+                    total_saved_db += platform_data['db_saved'] + platform_data['db_updated']
                     total_failed += platform_data['db_failed']
             
             # CSV 저장 결과 분석
@@ -208,7 +210,7 @@ def log_detailed_results(analysis):
             status_emoji = "✅" if data['status'] == 'success' else "❌" if data['status'] == 'error' else "⚠️"
             logger.info(f"{status_emoji} {platform.upper()}:")
             logger.info(f"   크롤링: {data['crawled_count']}개")
-            logger.info(f"   DB 저장: {data['db_saved']}개 성공, {data['db_failed']}개 실패, {data['db_skipped']}개 스킵")
+            logger.info(f"   DB 저장: {data['db_saved']}개 생성, {data['db_updated']}개 교체, {data['db_failed']}개 실패, {data['db_skipped']}개 스킵")
             logger.info(f"   CSV 저장: {data['csv_saved']}개 파일")
         
         # 전체 요약
@@ -271,7 +273,10 @@ def run_single_platform_crawling(platform, target_date=None):
             
             db_result = result.get('db_results', {})
             if isinstance(db_result, dict):
-                logger.info(f"💾 DB 저장: {db_result.get('saved_count', 0)}개 성공, {db_result.get('failed_count', 0)}개 실패")
+                saved_count = db_result.get('saved_count', 0)
+                updated_count = db_result.get('updated_count', 0)
+                failed_count = db_result.get('failed_count', 0)
+                logger.info(f"💾 DB 저장: {saved_count}개 생성, {updated_count}개 교체, {failed_count}개 실패")
             
             csv_result = result.get('csv_results', [])
             if isinstance(csv_result, list):

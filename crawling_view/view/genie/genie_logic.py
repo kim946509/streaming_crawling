@@ -239,7 +239,7 @@ class GenieCrawler:
                     'views': view_data.get('views', -1),
                     'listeners': view_data.get('listeners', -1),
                     'crawl_date': get_current_timestamp(),
-                    'song_id': None # song_id는 크롤링 중에는 알 수 없으므로 None
+                    'song_id': target_song_info.get('song_id')  # target_song_info에서 song_id 가져오기
                 }
                 
                 logger.info(f"✅ '{song_title}' - '{artist_name}' 파싱 성공!")
